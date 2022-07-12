@@ -130,6 +130,9 @@ Then, the user will be redirected back to the page they were attempting to visit
 The credentials stored in the browser will expire periodically, forcing the user to reauthenticate, so that stolen browser credentials cannot be reused indefinitely and the user's scopes are recalculated based on their current group membership.
 The user can also log out at any time, which discards their stored authentication credentials and forces reauthentication the next time they attempt to visit a page that requires authentication.
 
+The user's cookie holding their authentication information should not be passed down to individual Science Platform applications in a way that would allow that application to impersonate the user to different applications.
+This is not yet implemented, but is expected to be added to the design in the future by following the recommendations in DMTN-193_.
+
 .. _token-authentication:
 
 Token authentication
@@ -183,6 +186,9 @@ The service will receive this token as part of the request, in an HTTP header, a
 As a special case, the Notebook Aspect of the Science Platform is intended as a general-purpose computing platform for the user and should have all of the same access that the user themselves have.
 The Notebook Aspect will therefore request a delegated token of a special type that has all of the same scopes as the user does at the time of access, but may have a lifetime limited to the lifetim of the user's notebook server.
 
+``Authorization`` headers used for token authentication should be (but are not yet) filtered out of the request so that they are not passed down to the underlying Science Platform service.
+Otherwise, a service could recover the user's original token from the HTTP headers of the request.
+
 Service-to-service authentication
 ---------------------------------
 
@@ -211,6 +217,8 @@ The **IDM-XXXX** references are to requirements listed in SQR-044_, which may pr
 
 .. rst-class:: compact
 
+- Use multiple domains to control JavaScript access and user cookies
+- Filter out the token from ``Authorization`` headers of incoming requests
 - Force two-factor authentication for administrators (IDM-0007)
 - Force reauthentication to provide an affiliation (IDM-0009)
 - Changing usernames (IDM-0012)
@@ -234,6 +242,10 @@ The **IDM-XXXX** references are to requirements listed in SQR-044_, which may pr
 References
 ==========
 
+DMTN-193_
+    Discussion of web security for the Science Platform.
+    This is primarily about implementation details, but the designs here for filtering some request headers and for using multiple domains for Science Platform services to limit the possible damage from credential leakage are relevant to the overall design.
+
 DMTN-224_
     The implementation details of the Science Platform identity management system.
 
@@ -253,6 +265,7 @@ SQR-044_
 SQR-069_
     History and analysis of the decisions made during design and implementation of the Science Platform identity management system.
 
+.. _DMTN-193: https://dmtn-193.lsst.io/
 .. _DMTN-224: https://dmtn-224.lsst.io/
 .. _DMTN-225: https://dmtn-225.lsst.io/
 .. _DMTN-235: https://dmtn-235.lsst.io/
