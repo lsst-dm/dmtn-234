@@ -100,15 +100,17 @@ Service backends need only be aware of information exposed by the authentication
 The Science Platform requires Kubernetes, which handles this type of interposition via ``Ingress`` resources.
 If the authentication service rejects the request at the ingress, it is never passed to the backend service.
 
+.. _scopes:
+
 Scopes
 ------
 
-After a user authenticates to the Science Platform, they are granted a set of "scopes."
+After a user authenticates to the Science Platform via a web browser, they are granted a set of "scopes" based on their group memberships.
 These scopes are used to make authorization decisions.
 Each service or component of the Science Platform will require the user have specific scopes to be allowed to access it.
-Users without the necessary scopes will be rejected with an error.
+Users without the necessary scopes to access a service will be rejected with an error when they attempt to access it.
 
-Scopes are used for "coarse-grained" access control: whether a user can access a specific component or API at all.
+Scopes are used for "coarse-grained" access control: whether a user can access a specific component or API at all, or whether the user is allowed to access administrative interfaces for a service.
 "Fine-grained" access control decisions made by services, such as whether a user with general access to the service is able to run a specific query or access a specific image, are instead made based on the user's group membership.
 (See :ref:`Groups <groups>` for more details.)
 
@@ -138,9 +140,12 @@ This is not yet implemented, but is expected to be added to the design in the fu
 Token authentication
 --------------------
 
-Users can create authentication tokens and manage them via a web UI provided by the Science Platform.
+Users can create authentication tokens and manage them (modify their names, scopes, and expiration, delete them, and see their history) via a web UI provided by the Science Platform.
 These authentication tokens are specific to that deployment of the Science Platform.
 Tokens are intended for non-browser access to the Science Platform, such as for API calls from programs, use in astronomy desktop applications, and so forth.
+
+Tokens have a public component (used as a unique identifier for the token in the UI) and a secret component.
+The full token including the secret component is shown only when the token is created and subsequently cannot be obtained again.
 
 The user chooses a name for the token when creating it.
 This name must be unique across all tokens the user has created and is intended as an aid for the user to keep track of where the token is being used.
@@ -164,6 +169,8 @@ When Basic Authentication is used, either the username or the password should be
 
 Tokens cannot be used to access the identity management system to attach new federated identities, change the user's email address, change group memberships, or make any similar changes.
 They may only be used to access Science Platform services.
+
+.. _subrequest-auth:
 
 Subrequest authentication
 -------------------------
@@ -202,10 +209,85 @@ The authentication service will also automatically refresh the token to ensure t
 
 As specified in DMTN-225_, the usernames associated with all such tokens must begin with ``bot-``.
 
+OpenID Connect authentication
+-----------------------------
+
+Some Science Platform deployments run third-party services (Chronograf_, for example) that themselves want to do OpenID Connect authentication of the user.
+To support those services, the authentication service of the Science Platform is also an OpenID Connect provider.
+Such services can then point to the authentication service as the authentication provider, and those authentications will use the same source of identity as other authentications to the Science Platform.
+(This authentication is independent of any use of OpenID Connect by the authentication service to a federated or local identity provider external to the Science Platform, although the two authentications will be chained together when needed.)
+
+.. _Chronograf: https://www.influxdata.com/time-series-platform/chronograf/
+
+At present, OpenID Connect authentication used in this fashion does not do any access control.
+All users with any access to that Science Platform deployment will be able to complete the OpenID Connect authentication.
+The protected service must do any necessary access control itself.
+
+The ID token returned by this OpenID connect provider is a :abbr:`JWT (JSON Web Token)` (see `RFC 7519`_) that includes the user's username, full name (if available), and numeric UID (if available).
+No other information is provided to the protected service.
+
+.. _RFC 7519: https://datatracker.ietf.org/doc/html/rfc7519
+
 .. _groups:
 
 Groups
 ======
+
+As discussed in :ref:`Scopes <scopes>`, when a user authenticates to the Science Platform with a web browser, their group membershp is retrieved and they are granted scopes based on their group membership.
+The group membership of the user is also provided to each service in an HTTP header, and is available via the :ref:`Token API <token-api>` on request from any service receiving a delegated token (see :ref:`Subrequest authentication <subrequest-auth>`).
+
+The source of the user's group membership information varies by type of Science Platform deployment.
+
+For restricted access deployments, group membership is taken from the user's GitHub teams, from an LDAP server configured as the source of identity information for that deployment, or from the token issued by an OpenID Connect authentication service.
+
+For general access deployments, group membership is maintained in the identity management system.
+Users will be added to appropriate access groups during enrollment by the approver.
+Users may also create their own groups, and add and remove members from those groups as they see fit.
+Collaborations using the Science Platform may also maintain groups of their members or affiliates.
+
+In addition to those groups, in general access deployments, every user will also be a member of a group with the same name as their username.
+That group will have only one member, the matching user.
+This allows services that make access decisions based on groups to uniformly use group membership for all access decisions, without having to special-case access rules for individual users.
+It also provides the user with a default group for services that use an underlying POSIX file system, such as the Notebook Aspect.
+Restricted access deployments will generally also follow this convention, but they're not required to.
+
+Access control decisions based on group membership must be made by individual services.
+The authentication service only applies access restrictions based on scopes, and otherwise passes the group information to the service for it to do with as it sees fit.
+In many cases, services will make subrequests on behalf of the user, and rely on access control by group membership to be imposed by lower-level services.
+
+For further details about the sources of group information and their naming constraints, see DMTN-225_.
+
+UIDs and GIDs
+=============
+
+Portions of the Science Platform, particularly the Notebook Aspect, will use an underlying POSIX file system.
+Users therefore need numeric UIDs and GIDs to access those portions of the Science Platform, since those will be used for access control in the POSIX file system.
+
+Every user is optionally assigned a numeric UID.
+(The numeric UID may be required for access to some services.)
+For restricted access deployments, that UID may come from an external source, such as GitHub, a local LDAP server, or an OpenID Connect ID token.
+For general access deployments, user UIDs are assigned and recorded inside the identity management system.
+
+Each group is similary optionally assigned a numeric GID.
+In general access deployments, and by preference in restricted access deployments, the GID for the group with the same name as the user is the same as the UID.
+
+For further details on UID and GID assignment, see DMTN-225_.
+
+.. _token-api:
+
+Token API
+=========
+
+All actions on tokens — issuing them, revoking them, modifying them, retrieving their associated data, retrieving their history, and so forth — may be done through a token REST API.
+Authentication to that REST API is via either cookie or bearer token in an ``Authorization`` header, the same as any other Science Platform API.
+The browser-based user interface for creating and manipulating user tokens described in :ref:`Token authentication <token-authentication>` is implemented on top of that REST API.
+
+Any user with ``user:token`` scope (given to all browser sessions by default, but often not delegated to created tokens) can list, create, revoke, modify, and see the history for their own tokens.
+Anyone in possession of a token can get the data associated with that token (its scopes, expiration, and so forth) and the identity data for the user associated with that token (full name if known, email address, UID, group membership, and so forth) via the token API by authenticating with that token.
+This can be used by services making or processing subrequests (see :ref:`Subrequest authentication <subrequest-auth>`).
+
+Administrators with ``admin:token`` scope can take all of those same actions on behalf of the user; can add, remove, or list administrators (who receive ``admin:token`` scope when they authenticate); can create new tokens on behalf of arbitrary users; and can do global queries on all tokens, token history, and any other data stored by the authentication service.
+Administrators cannot get the secret portion of existing tokens without having possession of the token.
 
 .. _remaining-work:
 
@@ -219,6 +301,7 @@ The **IDM-XXXX** references are to requirements listed in SQR-044_, which may pr
 
 - Use multiple domains to control JavaScript access and user cookies
 - Filter out the token from ``Authorization`` headers of incoming requests
+- Restrict OpenID Connect authentication by scope
 - Force two-factor authentication for administrators (IDM-0007)
 - Force reauthentication to provide an affiliation (IDM-0009)
 - Changing usernames (IDM-0012)
