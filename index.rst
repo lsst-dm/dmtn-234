@@ -48,7 +48,7 @@ If GitHub is used as the identity provider, identity information will be taken f
 If a local identity provider is used, identity and group information will be read either from an associated LDAP server or from the identity token provided by the OpenID Connect authentication process.
 
 In all cases, the user identity provider is also the primary source of user authentication.
-After a user has authenticated via their identity provider, they may create an authentication token for programmatic access to the Science Platform (see :ref:`Tokens <tokens>`).
+After a user has authenticated via their identity provider, they may create an authentication token for programmatic access to the Science Platform (see :ref:`Token authentication <token-authentication>`).
 However, they must authenticate via their identity provider first.
 
 The Science Platform will not store or verify any user authentication information, such as passwords, access codes, or certificates, apart from the tokens issued by the Science Platform after a successful authentication.
@@ -84,19 +84,121 @@ Those identities may be from other identity providers that are part of a support
 GitHub and Google, in particular, will be supported as identity providers.
 All identities added to the same account are treated as equivalent for authentication purposes; the user can use any of the linked identity providers to authenticate to the Science Platform.
 
-Note that users can use GitHub or Google as their authentication provider for initial enrollment, although in that case the identity provider will probably not release any information useful for determining their data rights, and the approver will probably need information from outside the scope of the identity management system.
+Note that users can use GitHub or Google as their authentication provider for initial enrollment, although in that case the identity provider will probably not release any information useful for determining their data rights, and the approver will therefore need information from outside the scope of the identity management system.
 
 Once the user's account is active, they can change their preferred name or email address whenever they wish.
 If they change their email address, they will have to verify that they can receive email at the new email address.
 
+.. _authentication:
+
+Authentication flows
+====================
+
+So far as possible, authentication and access control for Science Platform services will be handled by a separate authentication service interposed between the user request and the service backend.
+Service backends need only be aware of information exposed by the authentication service, not the precise mechanism the user used to authenticate.
+
+The Science Platform requires Kubernetes, which handles this type of interposition via ``Ingress`` resources.
+If the authentication service rejects the request at the ingress, it is never passed to the backend service.
+
+Scopes
+------
+
+After a user authenticates to the Science Platform, they are granted a set of "scopes."
+These scopes are used to make authorization decisions.
+Each service or component of the Science Platform will require the user have specific scopes to be allowed to access it.
+Users without the necessary scopes will be rejected with an error.
+
+Scopes are used for "coarse-grained" access control: whether a user can access a specific component or API at all.
+"Fine-grained" access control decisions made by services, such as whether a user with general access to the service is able to run a specific query or access a specific image, are instead made based on the user's group membership.
+(See :ref:`Groups <groups>` for more details.)
+
+For a list of the scopes used by the Science Platform, their definitions, and the services to which they grant access, see DMTN-235_.
+
+Browser authentication
+----------------------
+
+If a user goes to a Science Platform web page without currently being authenticated, they will be sent to a login provider to authenticate.
+For general access deployments, this will be a federated login provider that will allow them to choose their federated identity provider (or will remember their previous selection if desired and automatically send them there).
+For restricted access deployments, this will be whatever the source of authentication is configured to be, either GitHub or an OpenID Connect provider.
+
+The Science Platform authentication system will perform an OpenID Connect or (for GitHub) OAuth 2.0 authentication with the login provider and use that to obtain the user's identity.
+It will then obtain any other needed information about the user (numeric UID, group membership and numeric GIDs, full name, email address, etc.) following the rules for sources of user information defined in DMTN-225_.
+The user will be granted scopes based on their group membership.
+The user's authentication credentials, including their scopes, will be stored in their browser, restricted to that installation of the Science Platform.
+Then, the user will be redirected back to the page they were attempting to visit, now with authentication.
+
+The credentials stored in the browser will expire periodically, forcing the user to reauthenticate, so that stolen browser credentials cannot be reused indefinitely and the user's scopes are recalculated based on their current group membership.
+The user can also log out at any time, which discards their stored authentication credentials and forces reauthentication the next time they attempt to visit a page that requires authentication.
+
+.. _token-authentication:
+
+Token authentication
+--------------------
+
+Users can create authentication tokens and manage them via a web UI provided by the Science Platform.
+These authentication tokens are specific to that deployment of the Science Platform.
+Tokens are intended for non-browser access to the Science Platform, such as for API calls from programs, use in astronomy desktop applications, and so forth.
+
+The user chooses a name for the token when creating it.
+This name must be unique across all tokens the user has created and is intended as an aid for the user to keep track of where the token is being used.
+
+When the user creates a token, they can choose which scopes to delegate to that token.
+They can only delegate scopes that their current session has.
+The user may wish to only delegate a subset of scopes so that, for example, the token cannot be used to create more tokens or access more privileged APIs unrelated to the purpose for which the token is being created.
+
+When the user creates a token, they can set an expiration date for the token.
+They can also set the token to never expire.
+
+The metadata associated with a token (full name, email address, numeric UID, group membership, and so forth) will be the same as the user who created it.
+
+To authenticate with a token, the user provides it in the ``Authoriztion`` header.
+The preferred way of doing so is as an `RFC 6750`_ bearer token.
+However, some astronomy applications may only support HTTP Basic Authentication (`RFC 7617`_), so it is supported as an alternative to the bearer token protocol.
+When Basic Authentication is used, either the username or the password should be the token, and the other field should be set to ``x-oauth-basic``.
+
+.. _RFC 6750: https://datatracker.ietf.org/doc/html/rfc6750
+.. _RFC 7617: https://datatracker.ietf.org/doc/html/rfc7617
+
+Tokens cannot be used to access the identity management system to attach new federated identities, change the user's email address, change group memberships, or make any similar changes.
+They may only be used to access Science Platform services.
+
+Subrequest authentication
+-------------------------
+
+In some cases, a Science Platform service will need to perform further requests on behalf of a user in order to satisfy a request.
+For example, the Portal Aspect will need to make TAP queries on the user's behalf.
+
+Each of these requests should be authenticated and authorized as the user, so that the underlying services do not need to perform separate authorization checks.
+Instead, the same authentication service that is interposed for user requests should also be interposed to perform access control for each subrequest.
+This, in turn, implies that services should be able to obtain user tokens that they can use to make subrequests.
+
+This token, however, should not be the token that the user used to authenticate the initial request, since that token will often have all the scopes that a user has and would be able to perform far more actions than the service should be able to perform on behalf of the user.
+For example, the Portal Aspect should not be able to create a notebook as the user in the Notebook Aspect.
+The user's token may also have a long expiration time or may not expire at all, whereas the service only needs a token for long enough to satisfy the user's request.
+
+Services therefore have a mechanism to request delegated tokens.
+If a server is so configured, the authentication system will issue an internal token for that service (or reuse an existing one if appropriate), limited in scope to only the permissions that service needs and with an expiration time set.
+The service will receive this token as part of the request, in an HTTP header, and can then use the token to make subsequent subrequests required to respond to the user's request.
+
+As a special case, the Notebook Aspect of the Science Platform is intended as a general-purpose computing platform for the user and should have all of the same access that the user themselves have.
+The Notebook Aspect will therefore request a delegated token of a special type that has all of the same scopes as the user does at the time of access, but may have a lifetime limited to the lifetim of the user's notebook server.
+
+Service-to-service authentication
+---------------------------------
+
+In some cases, services may need to access other Science Platform services on their own behalf, unrelated to a user request.
+For example, a monitoring system may need to make periodic requests to authenticated APIs of Science Platform services to ensure that they are running and correctly responding to requests.
+
+These requests will be authorized in the same way as subrequests discussed above, by interposing the same authentication system used for user requests.
+Services that make such requests will ask the authentication service to create tokens for them by creating a custom Kubernetes resource containing that request, including the identity of the service and the scopes it requires.
+The authentication service will then provide that token as a Kubernetes ``Secret`` resource associated with the request in the custom resource, and thereby make it available to the service pods through the normal Kubernetes mechanisms for injecting secrets into pods.
+The authentication service will also automatically refresh the token to ensure that it does not expire.
+
+As specified in DMTN-225_, the usernames associated with all such tokens must begin with ``bot-``.
+
 .. _groups:
 
 Groups
-======
-
-.. _tokens:
-
-Tokens
 ======
 
 .. _remaining-work:
@@ -138,6 +240,9 @@ DMTN-224_
 DMTN-225_
     Metadata gathered and stored for each user, including constraints such as valid username and group name patterns and UID and GID ranges.
 
+DMTN-235_
+    Lists and defines the scopes used by the Science Platform.
+
 RDO-013_
     The Vera C. Rubin Observatory Data Policy, which defines who will have access to Rubin Observatory data.
 
@@ -150,6 +255,7 @@ SQR-069_
 
 .. _DMTN-224: https://dmtn-224.lsst.io/
 .. _DMTN-225: https://dmtn-225.lsst.io/
+.. _DMTN-235: https://dmtn-235.lsst.io/
 .. _RDO-013: https://docushare.lsst.org/docushare/dsweb/Get/RDO-13/
 .. _SQR-044: https://sqr-044.lsst.io/
 .. _SQR-069: https://sqr-069.lsst.io/
