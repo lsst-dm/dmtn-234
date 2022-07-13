@@ -29,6 +29,36 @@ Every deployment of the Science Platform is a separate identity and authenticati
 Access to one deployment of the Science Platform does not grant access to a different deployment of the Science Platform.
 The same person may have different usernames, authentication mechanisms, and identity information in each Science Platform deployment to which they have access.
 
+Component overview
+==================
+
+A general access deployment of the Science Platform has, at a high level, the following structure for handling authentication and identity management for two Science Platform services.
+Both services receive user requests, and service A also sends requests to service B.
+(The deployment would have multiple services, not just two services as shown.)
+
+.. figure:: /_static/general-access.png
+   :name: General access deployment architecture
+
+   High-level structure of authentication and identity management for two services that receive user requests.
+   Service A also sends requests to service B.
+
+The identity management component is where the user's identity data (email, full name, group membership, etc.) and associated identities are stored, and where the user can go to change that information.
+Here it is shown as running outside of the Kubernetes cluster on which the Science Platform is deployed.
+This is true in the current implementation but need not be the case in the design.
+
+The Kubernetes ingress verifies authentication and access control on each request with a subquery to the authentication service (labelled Authentication in this diagram).
+
+Restricted access environments have a wider range of configurations.
+The identity provider may be GitHub or may be a local OpenID Connect provider, LDAP may or may not be in use, and so forth.
+Here is a sample diagram for a restricted access environment using a local OpenID Connect identity provider and using LDAP as the data store for identity information.
+
+.. figure:: /_static/restricted-access.png
+   :name: Sample restricted access deployment architecture
+
+   Sample high-level structure of authetnication and identity management in a restricted access deployment using OpenID Connect and LDAP.
+   Both services receive user requests.
+   Service A also sends requests to service B.
+
 User identity
 =============
 
@@ -48,7 +78,7 @@ If GitHub is used as the identity provider, identity information will be taken f
 If a local identity provider is used, identity and group information will be read either from an associated LDAP server or from the identity token provided by the OpenID Connect authentication process.
 
 In all cases, the user identity provider is also the primary source of user authentication.
-After a user has authenticated via their identity provider, they may create an authentication token for programmatic access to the Science Platform (see :ref:`Token authentication <token-authentication>`).
+After a user has authenticated via their identity provider, they may create an authentication token for programmatic access to the Science Platform (see :ref:`Token authentication <token-auth>`).
 However, they must authenticate via their identity provider first.
 
 The Science Platform will not store or verify any user authentication information, such as passwords, access codes, or certificates, apart from the tokens issued by the Science Platform after a successful authentication.
@@ -89,6 +119,104 @@ Note that users can use GitHub or Google as their authentication provider for in
 Once the user's account is active, they can change their preferred name or email address whenever they wish.
 If they change their email address, they will have to verify that they can receive email at the new email address.
 
+.. _tokens:
+
+Tokens
+======
+
+All authentication of browser or API access to the Science Platform except the identity management system is done with bearer tokens.
+These are short, random strings that function as lookup keys for active user authentication sessions.
+
+The identity management system of a general access deployment is a special case.
+It is only accessible via a web browser and uses identity information from the federated identity provider directly.
+Tokens cannot be used to access the identity management system.
+
+Tokens come in five types.
+The uses of those token types are discussed in more detail in :ref:`Authentication flows <authentication>`.
+
+session
+    Authenticates web access from a browser.
+    This type of token is stored in the user's browser as or inside an HTTP cookie, and is sent by that browser to the Science Platform when the user attempts to access a non-public page.
+    See :ref:`Browser authentication <browser-auth>` for more details.
+
+user
+    An authentication token created by the user.
+    The user generally authenticates with a session token to create a user token.
+    These tokens are intended for use in programmatic access to the Science Platform from user-written programs or local applications.
+    See :ref:`Token authentication <token-auth>` for more details.
+
+internal
+    Used for service-to-service authentication when a service makes a subrequest to another service as part of fulfilling a user request.
+    These tokens are associated with the identity of the user making the original request, but have restricted access permissions and are also associated with the service making the subrequest.
+    See :ref:`Subrequest authentication <subrequest-auth>` for more details.
+
+notebook
+    A special case of an internal token used by the Notebook Aspect.
+    When a user spawns a Notebook Aspect lab, that lab is issued a token with all the same access rights as the user's browser session.
+    That token is then available to the user for API calls to other Science Platform services from within their notebook.
+
+service
+    The one type of authentication token not associated with a user.
+    These tokens are used when one service wants to make an API call to another Science Platform service that is unrelated to a user request.
+    For example, a monitoring service may want to make a test API call to another service to ensure that it is operating properly.
+    See :ref:`Service-to-service authentication <service-auth>` for more details.
+
+These tokens tend to organize into hierarchies, as shown in the following diagram.
+
+.. figure:: /_static/tokens.svg
+   :name: Token type hierarchy
+
+   Hierarchy of token types.
+   The token type on the left of each arrow is used as authentication to create the token type on the right of the arrow.
+   Token creation other than creation of a user token from a session token happens automatically and the user need not be aware of it.
+
+The first hierarchy starts from a user's browser session.
+If the user accesses services that require authentication but don't make any subrequests, no further tokens are created.
+Otherwise, notebook and internal tokens may be created to satisfy the user's requests.
+Notice that subrequests can themselves have subrequests, which may create a chain of internal tokens.
+The user can also manually create a user token.
+
+The second hierarchy shows the user token being used to access services that make subrequests.
+
+The third hierarchy is for service-to-service authentication outside the scope of a user request.
+Service-to-service authentication may also involve notebook and internal tokens.
+
+.. _scopes:
+
+Scopes
+------
+
+Every token is associated with a set of scopes.
+These scopes are used to make authorization decisions.
+Each service or component of the Science Platform will require the authentication token have specific scopes to be allowed to access it.
+Requests authenticated with a token without the necessary scopes will be rejected with an error.
+
+Scopes come originally from the user's group membership.
+When they authenticate to the Science Platform with a web browser and get a session token, that token is given a list of scopes according to a per-deployment mapping of groups to scopes.
+Any subsequent notebook tokens created from that session token receive the same scopes.
+Internal tokens created from that token have at most the same scopes, usually fewer (since they will be restricted to only the scopes necessary for subrequests).
+
+Scopes are used for "coarse-grained" access control: whether a user can access a specific component or API at all, or whether the user is allowed to access administrative interfaces for a service.
+"Fine-grained" access control decisions made by services, such as whether a user with general access to the service is able to run a specific query or access a specific image, are instead made based on the user's group membership.
+(See :ref:`Groups <groups>` for more details.)
+
+For a list of the scopes used by the Science Platform, their definitions, and the services to which they grant access, see DMTN-235_.
+
+Child tokens
+------------
+
+Notebook and internal tokens are created from another token and are called "child tokens."
+The token from which they are created is called a "parent token."
+
+Child tokens inherit their lifetime and scopes from their parent token, in a possibly restricted way.
+The child token will never have more scopes or a longer lifetime than the parent token, but may have fewer scopes or a shorter lifetime.
+
+When a token is revoked, all child tokens of that token are also immediately revoked.
+This happens when the user logs out in their web browser (revoking the session token and all child tokens of the session token), or when the user deletes a previously-created user token (revoking all child tokens of that user token).
+
+Although the user authenticates with a session token in order to create a user token, user tokens are not child tokens of the session token and have an independent lifetime.
+As discussed in :ref:`Token authentication <token-auth>`, user tokens may have a longer lifetime than the session token used to create them.
+
 .. _authentication:
 
 Authentication flows
@@ -100,21 +228,11 @@ Service backends need only be aware of information exposed by the authentication
 The Science Platform requires Kubernetes, which handles this type of interposition via ``Ingress`` resources.
 If the authentication service rejects the request at the ingress, it is never passed to the backend service.
 
-.. _scopes:
+One implication of this is that all access to services in the Science Platform, including access to services from the Notebook Aspect and service-to-service access, must go through the ingress.
+This is not the default in Kubernetes; by default, applications running within the same Kubernetes cluster can access the ``Service`` or even ``Pod`` of another service directly without using the ingress.
+Correct use of the authentication service therefore requires blocking non-ingress access to other services via, for example, a Kubernetes ``NetworkPolicy``.
 
-Scopes
-------
-
-After a user authenticates to the Science Platform via a web browser, they are granted a set of "scopes" based on their group memberships.
-These scopes are used to make authorization decisions.
-Each service or component of the Science Platform will require the user have specific scopes to be allowed to access it.
-Users without the necessary scopes to access a service will be rejected with an error when they attempt to access it.
-
-Scopes are used for "coarse-grained" access control: whether a user can access a specific component or API at all, or whether the user is allowed to access administrative interfaces for a service.
-"Fine-grained" access control decisions made by services, such as whether a user with general access to the service is able to run a specific query or access a specific image, are instead made based on the user's group membership.
-(See :ref:`Groups <groups>` for more details.)
-
-For a list of the scopes used by the Science Platform, their definitions, and the services to which they grant access, see DMTN-235_.
+.. _browser-auth:
 
 Browser authentication
 ----------------------
@@ -125,41 +243,44 @@ For restricted access deployments, this will be whatever the source of authentic
 
 The Science Platform authentication system will perform an OpenID Connect or (for GitHub) OAuth 2.0 authentication with the login provider and use that to obtain the user's identity.
 It will then obtain any other needed information about the user (numeric UID, group membership and numeric GIDs, full name, email address, etc.) following the rules for sources of user information defined in DMTN-225_.
-The user will be granted scopes based on their group membership.
-The user's authentication credentials, including their scopes, will be stored in their browser, restricted to that installation of the Science Platform.
+From that information, a session token will be created with scopes based on the user's group membership.
+That session token will be stored in the user's browser, restricted to that installation of the Science Platform.
 Then, the user will be redirected back to the page they were attempting to visit, now with authentication.
 
-The credentials stored in the browser will expire periodically, forcing the user to reauthenticate, so that stolen browser credentials cannot be reused indefinitely and the user's scopes are recalculated based on their current group membership.
-The user can also log out at any time, which discards their stored authentication credentials and forces reauthentication the next time they attempt to visit a page that requires authentication.
+As a special case, if the user is accessing the identity management system of a general access deployment of the Science Platform, no session token is created or used.
+The OpenID Connect authentication is used directly to authenticate access to the identity management system.
 
-The user's cookie holding their authentication information should not be passed down to individual Science Platform applications in a way that would allow that application to impersonate the user to different applications.
+The session token stored in the browser will expire periodically, forcing the user to reauthenticate, so that stolen browser credentials cannot be reused indefinitely and the user's scopes are recalculated based on their current group membership.
+The user can also log out at any time, which revokes their session token, revokes any child tokens (notebook or internal, but not user) created from that session token, and forces reauthentication the next time they attempt to visit a page that requires authentication.
+
+The user's cookie holding their session token should not be passed down to individual Science Platform applications in a way that would allow that application to impersonate the user to different applications.
 This is not yet implemented, but is expected to be added to the design in the future by following the recommendations in DMTN-193_.
 
-.. _token-authentication:
+.. _token-auth:
 
 Token authentication
 --------------------
 
-Users can create authentication tokens and manage them (modify their names, scopes, and expiration, delete them, and see their history) via a web UI provided by the Science Platform.
-These authentication tokens are specific to that deployment of the Science Platform.
-Tokens are intended for non-browser access to the Science Platform, such as for API calls from programs, use in astronomy desktop applications, and so forth.
+Users can create user tokens and manage them (modify their names, scopes, and expiration, delete them, and see their history) via a web UI provided by the Science Platform.
+These tokens are specific to that deployment of the Science Platform.
+User tokens are intended for non-browser access to the Science Platform, such as for API calls from programs, use in astronomy desktop applications, and so forth.
 
-Tokens have a public component (used as a unique identifier for the token in the UI) and a secret component.
+User tokens have a public component (used as a unique identifier for the token in the UI) and a secret component.
 The full token including the secret component is shown only when the token is created and subsequently cannot be obtained again.
 
-The user chooses a name for the token when creating it.
-This name must be unique across all tokens the user has created and is intended as an aid for the user to keep track of where the token is being used.
+The user chooses a name for the user token when creating it.
+This name must be unique across all non-deleted user tokens for that user, and is intended as an aid for the user to keep track of where the token is being used.
 
-When the user creates a token, they can choose which scopes to delegate to that token.
-They can only delegate scopes that their current session has.
-The user may wish to only delegate a subset of scopes so that, for example, the token cannot be used to create more tokens or access more privileged APIs unrelated to the purpose for which the token is being created.
+When the user creates a user token, they can choose which scopes to delegate to that token.
+They can only delegate scopes that their current session token has.
+The user may wish to only delegate a subset of scopes so that, for example, the user token cannot be used to create more user tokens or access more privileged APIs unrelated to the purpose for which the token is being created.
 
-When the user creates a token, they can set an expiration date for the token.
+When the user creates a user token, they can set an expiration date for the token.
 They can also set the token to never expire.
 
-The metadata associated with a token (full name, email address, numeric UID, group membership, and so forth) will be the same as the user who created it.
+The metadata associated with a user token (full name, email address, numeric UID, group membership, and so forth) will be the same as the user who created it.
 
-To authenticate with a token, the user provides it in the ``Authoriztion`` header.
+To authenticate with a user token, the user provides it in the ``Authoriztion`` header.
 The preferred way of doing so is as an `RFC 6750`_ bearer token.
 However, some astronomy applications may only support HTTP Basic Authentication (`RFC 7617`_), so it is supported as an alternative to the bearer token protocol.
 When Basic Authentication is used, either the username or the password should be the token, and the other field should be set to ``x-oauth-basic``.
@@ -167,7 +288,7 @@ When Basic Authentication is used, either the username or the password should be
 .. _RFC 6750: https://datatracker.ietf.org/doc/html/rfc6750
 .. _RFC 7617: https://datatracker.ietf.org/doc/html/rfc7617
 
-Tokens cannot be used to access the identity management system to attach new federated identities, change the user's email address, change group memberships, or make any similar changes.
+User tokens cannot be used to access the identity management system to attach new federated identities, change the user's email address, change group memberships, or make any similar changes.
 They may only be used to access Science Platform services.
 
 .. _subrequest-auth:
@@ -180,21 +301,28 @@ For example, the Portal Aspect will need to make TAP queries on the user's behal
 
 Each of these requests should be authenticated and authorized as the user, so that the underlying services do not need to perform separate authorization checks.
 Instead, the same authentication service that is interposed for user requests should also be interposed to perform access control for each subrequest.
-This, in turn, implies that services should be able to obtain user tokens that they can use to make subrequests.
+This, in turn, implies that services should be able to obtain tokens that they can use to make subrequests.
 
-This token, however, should not be the token that the user used to authenticate the initial request, since that token will often have all the scopes that a user has and would be able to perform far more actions than the service should be able to perform on behalf of the user.
+These tokens, however, should not be the same as the token that the user used to authenticate the initial request, since that token will often have all the scopes that a user has and would be able to perform far more actions than the service should be able to perform on behalf of the user.
 For example, the Portal Aspect should not be able to create a notebook as the user in the Notebook Aspect.
-The user's token may also have a long expiration time or may not expire at all, whereas the service only needs a token for long enough to satisfy the user's request.
+The user's original token (session or user) may also have a long expiration time or may not expire at all, whereas the service only needs a token for long enough to satisfy the user's request.
 
 Services therefore have a mechanism to request delegated tokens.
-If a server is so configured, the authentication system will issue an internal token for that service (or reuse an existing one if appropriate), limited in scope to only the permissions that service needs and with an expiration time set.
-The service will receive this token as part of the request, in an HTTP header, and can then use the token to make subsequent subrequests required to respond to the user's request.
+These come in two types: internal tokens and notebook tokens.
+
+If a server is so configured, the authentication system will issue a new internal or notebook token for that service (or reuse an existing one if appropriate).
+For internal tokens, this will be limited in scope to only the permissions that service needs and with an expiration time set.
+The service will receive this new token as part of the request, in an HTTP header, and can then use the token to make subsequent subrequests required to respond to the user's request.
 
 As a special case, the Notebook Aspect of the Science Platform is intended as a general-purpose computing platform for the user and should have all of the same access that the user themselves have.
-The Notebook Aspect will therefore request a delegated token of a special type that has all of the same scopes as the user does at the time of access, but may have a lifetime limited to the lifetim of the user's notebook server.
+The Notebook Aspect (and only it) will therefore get a notebook token rather than an internal token.
+This is a special case of an internal token that has all of the same scopes as the user's original session token, and is associated with the user's notebook server.
+It may have a lifetime limited to the lifetim of the user's notebook server.
 
 ``Authorization`` headers used for token authentication should be (but are not yet) filtered out of the request so that they are not passed down to the underlying Science Platform service.
 Otherwise, a service could recover the user's original token from the HTTP headers of the request.
+
+.. _service-auth:
 
 Service-to-service authentication
 ---------------------------------
@@ -203,9 +331,10 @@ In some cases, services may need to access other Science Platform services on th
 For example, a monitoring system may need to make periodic requests to authenticated APIs of Science Platform services to ensure that they are running and correctly responding to requests.
 
 These requests will be authorized in the same way as subrequests discussed above, by interposing the same authentication system used for user requests.
-Services that make such requests will ask the authentication service to create tokens for them by creating a custom Kubernetes resource containing that request, including the identity of the service and the scopes it requires.
-The authentication service will then provide that token as a Kubernetes ``Secret`` resource associated with the request in the custom resource, and thereby make it available to the service pods through the normal Kubernetes mechanisms for injecting secrets into pods.
-The authentication service will also automatically refresh the token to ensure that it does not expire.
+They are authenticated with service tokens, which are issued only to services and are never used by users.
+Services can ask for service tokens by creating a custom Kubernetes resource specifying the properties of the service token, including the identity of the service and the scopes it requires.
+The authentication service will then provide that service token as a Kubernetes ``Secret`` resource associated with the request in the custom resource, and thereby make it available to the service pods through the normal Kubernetes mechanisms for injecting secrets into pods.
+The authentication service will also automatically refresh the service token to ensure that it does not expire.
 
 As specified in DMTN-225_, the usernames associated with all such tokens must begin with ``bot-``.
 
@@ -223,10 +352,13 @@ At present, OpenID Connect authentication used in this fashion does not do any a
 All users with any access to that Science Platform deployment will be able to complete the OpenID Connect authentication.
 The protected service must do any necessary access control itself.
 
-The ID token returned by this OpenID connect provider is a :abbr:`JWT (JSON Web Token)` (see `RFC 7519`_) that includes the user's username, full name (if available), and numeric UID (if available).
+The ID token returned by this OpenID Connect provider is a :abbr:`JWT (JSON Web Token)` (see `RFC 7519`_) that includes the user's username, full name (if available), and numeric UID (if available).
 No other information is provided to the protected service.
 
 .. _RFC 7519: https://datatracker.ietf.org/doc/html/rfc7519
+
+Note that this ID token is not a token as defined by :ref:`Tokens <tokens>` and cannot be used to authenticate to any other Science Platform service.
+It is an implementation detail of the OpenID Connect authentication process.
 
 .. _groups:
 
@@ -280,13 +412,13 @@ Token API
 
 All actions on tokens — issuing them, revoking them, modifying them, retrieving their associated data, retrieving their history, and so forth — may be done through a token REST API.
 Authentication to that REST API is via either cookie or bearer token in an ``Authorization`` header, the same as any other Science Platform API.
-The browser-based user interface for creating and manipulating user tokens described in :ref:`Token authentication <token-authentication>` is implemented on top of that REST API.
+The browser-based user interface for creating and manipulating user tokens described in :ref:`Token authentication <token-auth>` is implemented on top of that REST API.
 
-Any user with ``user:token`` scope (given to all browser sessions by default, but often not delegated to created tokens) can list, create, revoke, modify, and see the history for their own tokens.
+Any user authenticated with a token having ``user:token`` scope (given to all session tokens by default, but often not delegated to user tokens) can list, create, revoke, modify, and see the history for their own tokens.
 Anyone in possession of a token can get the data associated with that token (its scopes, expiration, and so forth) and the identity data for the user associated with that token (full name if known, email address, UID, group membership, and so forth) via the token API by authenticating with that token.
 This can be used by services making or processing subrequests (see :ref:`Subrequest authentication <subrequest-auth>`).
 
-Administrators with ``admin:token`` scope can take all of those same actions on behalf of the user; can add, remove, or list administrators (who receive ``admin:token`` scope when they authenticate); can create new tokens on behalf of arbitrary users; and can do global queries on all tokens, token history, and any other data stored by the authentication service.
+Administrators with a token having ``admin:token`` scope can take all of those same actions on behalf of the user; can add, remove, or list administrators (whose session tokens receive the ``admin:token`` scope when they authenticate); can create new tokens on behalf of arbitrary users; and can do global queries on all tokens, token history, and any other data stored by the authentication service.
 Administrators cannot get the secret portion of existing tokens without having possession of the token.
 
 .. _remaining-work:

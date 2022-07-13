@@ -19,7 +19,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-.PHONY: help clean html epub changes linkcheck refresh-bib
+.PHONY: help clean images html epub changes linkcheck refresh-bib
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -31,12 +31,24 @@ help:
 clean:
 	rm -rf $(BUILDDIR)/*
 
-html:
+images: _static/general-access.png _static/restricted-access.png \
+	_static/tokens.svg
+
+_static/general-access.png: _static/general-access.py
+	python _static/general-access.py
+
+_static/restricted-access.png: _static/restricted-access.py
+	python _static/restricted-access.py
+
+_static/tokens.svg: _static/tokens.diag
+	blockdiag -Tsvg _static/tokens.diag
+
+html: images
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
 
-epub:
+epub: images
 	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
 	@echo
 	@echo "Build finished. The epub file is in $(BUILDDIR)/epub."
@@ -46,7 +58,7 @@ changes:
 	@echo
 	@echo "The overview file is in $(BUILDDIR)/changes."
 
-linkcheck:
+linkcheck: images
 	$(SPHINXBUILD) -b linkcheck $(ALLSPHINXOPTS) $(BUILDDIR)/linkcheck
 	@echo
 	@echo "Link check complete; look for any errors in the above output " \
