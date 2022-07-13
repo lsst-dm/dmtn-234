@@ -4,8 +4,11 @@ Abstract
 The identity management, authentication, and authorization component of the Rubin Science Platform is responsible for maintaining a list of authorized users and their associated identity information, authenticating their access to the Science Platform, and determining which services they are permitted to use.
 This tech note describes the high-level design of that system and summarizes its desired features and capabilities, independent of choice of implementation.
 
-This document is part of a three-document series describing implementation of identity management for the Rubin Science Platform.
-The other two documents in that series are DMTN-224_, which describes the chosen identity management implementation, and SQR-069_, which provides a history and analysis of the decisions underlying the design and implementation.
+.. note::
+
+   This is part of a tech note series on identity management for the Rubin Science Platform.
+   The other two primary documents are DMTN-224_, which describes the implementation; and SQR-069_, which provides a history and analysis of the decisions underlying the design and implementation.
+   See the `references section of DMTN-224 <https://dmtn-224.lsst.io/#references>`__ for a complete list of related documents.
 
 Science Platform deployments
 ============================
@@ -486,4 +489,4 @@ SQR-069_
 .. _SQR-044: https://sqr-044.lsst.io/
 .. _SQR-069: https://sqr-069.lsst.io/
 
-The `references section in DMTN-224 <https://dmtn-224.lsst.io/#references>`__ has a more complete list of tech notes related to RSP identity management, including historical and implementation tech notes.
+The `references section of DMTN-224 <https://dmtn-224.lsst.io/#references>`__ has a more complete list of tech notes related to RSP identity management, including historical and implementation tech notes.
