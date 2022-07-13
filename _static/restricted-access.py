@@ -44,7 +44,7 @@ with Diagram(
         service_b = KubernetesEngine("Service B")
 
     user >> idp >> gafaelfawr
-    ldap >> gafaelfawr
+    gafaelfawr << ldap
     user >> ingress >> gafaelfawr
     ingress >> service_a
     ingress >> service_b
