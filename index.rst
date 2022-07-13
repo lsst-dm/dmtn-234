@@ -69,10 +69,8 @@ This source of identity is discussed in detail in :ref:`Federated identity <fede
 
 Restricted access deployments of the Science Platform may chose from one of two sources of user identity:
 
-.. rst-class:: compact
-
-- GitHub
-- Local identity provider supporting OpenID Connect
+#. GitHub
+#. Local identity provider supporting OpenID Connect
 
 If GitHub is used as the identity provider, identity information will be taken from the user's GitHub account information, and the user's groups (see :ref:`Groups <groups>`) will be derived from the user's organization and team memberships on GitHub.
 If a local identity provider is used, identity and group information will be read either from an associated LDAP server or from the identity token provided by the OpenID Connect authentication process.
