@@ -233,6 +233,50 @@ One implication of this is that all access to services in the Science Platform, 
 This is not the default in Kubernetes; by default, applications running within the same Kubernetes cluster can access the ``Service`` or even ``Pod`` of another service directly without using the ingress.
 Correct use of the authentication service therefore requires blocking non-ingress access to other services via, for example, a Kubernetes ``NetworkPolicy``.
 
+Use cases
+---------
+
+Here are some typical authentication use cases.
+This is a sampling of typical uses, not a comprehensive list of possibilities.
+
+- User authenticates using an identity provider and obtains a session token.
+
+- User accesses a service using a web browser.
+  The scopes of the user's session token are checked to ensure the user has the required scope to access that service.
+
+- User spawns a notebook via the Notebook Aspect.
+  The notebook spawner requests a delegated notebook token.
+  A new notebook token is created as a subtoken of the session token and made available to the notebook spawner.
+  The notebook spawner arranges to make that token available to the spawned notebook server.
+
+- User makes a request via a web interface that requires talking to another backend service.
+  The web service requests an internal token with appropriate scope in its ingress configuration.
+  The web service receives that token from the request and uses it to make requests on behalf of the user.
+  This may repeat recursively if that backend service needs to make requests to another service.
+
+- User makes a request via an API from their notebook server.
+  The notebook token is used for this request.
+
+- User makes a request via an API from the notebook server that requires making subrequests on the user's behalf.
+  This follows the same pattern as the equivalent case with a web UI: the backend service requests a subtoken and uses it.
+
+- User goes to the token management page and creates a user token.
+  The user chooses the scopes to grant that token (from the scopes the user's session token has), its name, and when it will expire.
+  This user token is created as a new token, not as a subtoken of the session token, but inherits information from the session token.
+  User stores that token locally on their laptop and uses it to make a request to an API service.
+  The token is checked to ensure that it has the appropriate scope for access to that service.
+
+- User makes an API call with their user token that requires making subrequests to other services.
+  This proceeds as with web UIs and notebook API calls.
+
+- A service requests a token for itself, unrelated to any user request.
+  That token is created and provided to the service.
+  The service then uses that token to make API calls to other services within the same Science Platform deployment.
+
+- A service uses a service token with ``admin:token`` scope to create a new ``user`` token for an arbitrary user.
+  The service can then use that token to authenticate as a user to other services.
+  This flow might be used by a load-testing or monitoring application.
+
 .. _browser-auth:
 
 Browser authentication
