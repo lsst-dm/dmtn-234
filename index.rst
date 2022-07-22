@@ -110,7 +110,7 @@ The user will be required to verify that they can receive email at the email add
 At the conclusion of enrollment, the user will have a pending account on that Science Platform but will not yet have access.
 The user must then be approved for access to the Science Platform.
 That approval process will place the user in an appropriate access group for their data rights, as determined by the approver.
-This decision will usually based primarily on their institutional affiliation, but possibly based on other data gathered outside of the identity management system.
+This decision will be taken according to observatory policy, but could be based on institutional affiliation and/or data obtained from outside the identity management system.
 Approvers will be project staff who have the knowledge and authority to verify the data rights of a particular community of users. Technical expertise in the identity management system is not required. 
 Once the user is approved, their account will become active and they will be able to use it to access the Science Platform.
 
