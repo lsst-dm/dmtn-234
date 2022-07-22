@@ -4,6 +4,10 @@ Abstract
 The identity management, authentication, and authorization component of the Rubin Science Platform is responsible for maintaining a list of authorized users and their associated identity information, authenticating their access to the Science Platform, and determining which services they are permitted to use.
 This tech note describes the high-level design of that system and summarizes its desired features and capabilities, independent of choice of implementation.
 
+This is not a complete description of everything we want the identity management system to do, only a design for the portions that have been implemented to date.
+Designs for further components and features will be added to this document as they are completed.
+For a list of remaining work, see the `remaining work section of SQR-069 <https://sqr-069.lsst.io/#remaining>`__.
+
 .. note::
 
    This is part of a tech note series on identity management for the Rubin Science Platform.
@@ -467,37 +471,6 @@ Administrators with a token having ``admin:token`` scope can take all of those s
 Administrators cannot get the secret portion of existing tokens without having possession of the token.
 
 .. _remaining-work:
-
-Remaining work
-==============
-
-The following requirements should be satisfied by the Science Platform identity management system, but are not yet part of the design.
-The **IDM-XXXX** references are to requirements listed in SQR-044_, which may provide additional details.
-
-.. rst-class:: compact
-
-- Use multiple domains to control JavaScript access and user cookies
-- Filter out the token from ``Authorization`` headers of incoming requests
-- Restrict OpenID Connect authentication by scope
-- Force two-factor authentication for administrators (IDM-0007)
-- Force reauthentication to provide an affiliation (IDM-0009)
-- Changing usernames (IDM-0012)
-- Handling duplicate email addresses (IDM-0013)
-- Email notification of federated identity and user token changes (IDM-0206)
-- Freezing accounts (IDM-1001)
-- Deleting accounts (IDM-1002)
-- Setting an expiration date on an account (IDM-1003, IDM-1301)
-- Notifying users of upcoming account expiration (IDM-1004)
-- Notifying users about email address changes (IDM-1101)
-- User class markers (IDM-1103, IDM-1310)
-- Quotas (IDM-1200, IDM-1201, IDM-1202, IDM-1203, IDM-1303, IDM-1401, IDM-1402, IDM-2100, IDM-2101, IDM-2102, IDM-2103, IDM-2201, IDM-3003)
-- Administrator verification of email addresses (IDM-1302)
-- User impersonation (IDM-1304, IDM-1305, IDM-2202)
-- Review newly-created accounts (IDM-1309)
-- Merging accounts (IDM-1311)
-- Affiliation-based groups (IDM-2001)
-- Expiration of group membership (IDM-2005)
-- Groups owned by other groups (IDM-2009)
 
 References
 ==========
