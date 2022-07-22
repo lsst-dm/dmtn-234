@@ -471,8 +471,6 @@ This can be used by services making or processing subrequests (see :ref:`Subrequ
 Administrators with a token having ``admin:token`` scope can take all of those same actions on behalf of the user; can add, remove, or list administrators (whose session tokens receive the ``admin:token`` scope when they authenticate); can create new tokens on behalf of arbitrary users; and can do global queries on all tokens, token history, and any other data stored by the authentication service.
 Administrators cannot get the secret portion of existing tokens without having possession of the token.
 
-.. _remaining-work:
-
 References
 ==========
 
@@ -492,10 +490,6 @@ DMTN-235_
 RDO-013_
     The Vera C. Rubin Observatory Data Policy, which defines who will have access to Rubin Observatory data.
 
-SQR-044_
-    Draft requirements for the identity management system.
-    This is neither complete nor entirely up-to-date, but it provides useful context and elaboration for some of the items listed in :ref:`Remaining work <remaining-work>`.
-
 SQR-069_
     History and analysis of the decisions made during design and implementation of the Science Platform identity management system.
 
@@ -504,7 +498,6 @@ SQR-069_
 .. _DMTN-225: https://dmtn-225.lsst.io/
 .. _DMTN-235: https://dmtn-235.lsst.io/
 .. _RDO-013: https://docushare.lsst.org/docushare/dsweb/Get/RDO-13/
-.. _SQR-044: https://sqr-044.lsst.io/
 .. _SQR-069: https://sqr-069.lsst.io/
 
 The `references section of DMTN-224 <https://dmtn-224.lsst.io/#references>`__ has a more complete list of tech notes related to RSP identity management, including historical and implementation tech notes.
