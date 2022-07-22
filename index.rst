@@ -53,7 +53,7 @@ The identity management component is where the user's identity data (email, full
 Here it is shown as running outside of the Kubernetes cluster on which the Science Platform is deployed.
 This is true in the current implementation but need not be the case in the design.
 
-The Kubernetes ingress verifies authentication and access control on each request with a subquery to the authentication service (labelled Authentication in this diagram).
+The Kubernetes ingress verifies authentication and access control on each request with a subquery to the authentication service (labeled Authentication in this diagram).
 
 Restricted access environments have a wider range of configurations.
 The identity provider may be GitHub or may be a local OpenID Connect provider, LDAP may or may not be in use, and so forth.
@@ -62,7 +62,7 @@ Here is a sample diagram for a restricted access environment using a local OpenI
 .. figure:: /_static/restricted-access.png
    :name: Sample restricted access deployment architecture
 
-   Sample high-level structure of authetnication and identity management in a restricted access deployment using OpenID Connect and LDAP.
+   Sample high-level structure of authentication and identity management in a restricted access deployment using OpenID Connect and LDAP.
    Both services receive user requests.
    Service A also sends requests to service B.
 
@@ -367,7 +367,7 @@ The service will receive this new token as part of the request, in an HTTP heade
 As a special case, the Notebook Aspect of the Science Platform is intended as a general-purpose computing platform for the user and should have all of the same access that the user themselves have.
 The Notebook Aspect (and only it) will therefore get a notebook token rather than an internal token.
 This is a special case of an internal token that has all of the same scopes as the user's original session token, and is associated with the user's notebook server.
-It may have a lifetime limited to the lifetim of the user's notebook server.
+It may have a lifetime limited to the lifetime of the user's notebook server.
 
 ``Authorization`` headers used for token authentication should be (but are not yet) filtered out of the request so that they are not passed down to the underlying Science Platform service.
 Otherwise, a service could recover the user's original token from the HTTP headers of the request.
@@ -415,7 +415,7 @@ It is an implementation detail of the OpenID Connect authentication process.
 Groups
 ======
 
-As discussed in :ref:`Scopes <scopes>`, when a user authenticates to the Science Platform with a web browser, their group membershp is retrieved and they are granted scopes based on their group membership.
+As discussed in :ref:`Scopes <scopes>`, when a user authenticates to the Science Platform with a web browser, their group membership is retrieved and they are granted scopes based on their group membership.
 The group membership of the user is also provided to each service in an HTTP header, and is available via the :ref:`Token API <token-api>` on request from any service receiving a delegated token (see :ref:`Subrequest authentication <subrequest-auth>`).
 
 The source of the user's group membership information varies by type of Science Platform deployment.
@@ -450,7 +450,7 @@ Every user is optionally assigned a numeric UID.
 For restricted access deployments, that UID may come from an external source, such as GitHub, a local LDAP server, or an OpenID Connect ID token.
 For general access deployments, user UIDs are assigned and recorded inside the identity management system.
 
-Each group is similary optionally assigned a numeric GID.
+Each group is similarly optionally assigned a numeric GID.
 In general access deployments, and by preference in restricted access deployments, the GID for the group with the same name as the user is the same as the UID.
 
 For further details on UID and GID assignment, see DMTN-225_.
