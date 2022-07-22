@@ -111,7 +111,7 @@ At the conclusion of enrollment, the user will have a pending account on that Sc
 The user must then be approved for access to the Science Platform.
 That approval process will place the user in an appropriate access group for their data rights, as determined by the approver.
 This decision will usually based primarily on their institutional affiliation, but possibly based on other data gathered outside of the identity management system.
-Approvers may be Science Platform administrators or delegates who have the knowledge and authority to verify the data rights of a particular community of users.
+Approvers will be project staff who have the knowledge and authority to verify the data rights of a particular community of users. Technical expertise in the identity management system is not required. 
 Once the user is approved, their account will become active and they will be able to use it to access the Science Platform.
 
 Once a user's account is active, they may add additional identities to that same account.
