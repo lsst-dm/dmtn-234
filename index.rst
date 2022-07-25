@@ -238,6 +238,9 @@ One implication of this is that all access to services in the Science Platform, 
 This is not the default in Kubernetes; by default, applications running within the same Kubernetes cluster can access the ``Service`` or even ``Pod`` of another service directly without using the ingress.
 Correct use of the authentication service therefore requires blocking non-ingress access to other services via, for example, a Kubernetes ``NetworkPolicy``.
 
+TLS is required for all traffic between the user and the Science Platform.
+Communications internal to the Science Platform need not use TLS provided that they happen only within a restricted private network specific to that Science Platform deployment.
+
 Use cases
 ---------
 
