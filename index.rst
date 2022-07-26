@@ -36,6 +36,26 @@ Every deployment of the Science Platform is a separate identity and authenticati
 Access to one deployment of the Science Platform does not grant access to a different deployment of the Science Platform.
 The same person may have different usernames, authentication mechanisms, and identity information in each Science Platform deployment to which they have access.
 
+Required infrastructure
+-----------------------
+
+In order to deploy the Science Platform's identity management component, the hosting environment for that Science Platform deployment must provide:
+
+- A Kubernetes cluster running a recent version of Kubernetes.
+  The Science Platform is primarily tested against the "regular" channel of Google Kubernetes Engine and may not work on older versions of Kubernetes.
+
+- Load balancing and IP allocation for an ingress controller.
+  This will be used by ingress-nginx to allocate its external IP and to receive external traffic.
+
+- A Kubernetes provider of ``PersistentVolume`` storage.
+  This will be used to store the token data for the Science Platform.
+  If this storage is not persistent, user tokens will be regularly invalidated.
+  The hosting environment should also provide some way for those volumes to be backed up and restored.
+
+A PostgreSQL database for internal storage of authentication and authorization data will be used if available and suitable for the needs of the Science Platform, but the Science Platform can deploy its own internal PostgreSQL server if necessary.
+
+Due to the specific requirements around auth subrequest handling, the Science Platform provides its own ingress controller and cannot use an ingress controller provided by the hosting environment.
+
 Component overview
 ==================
 
@@ -237,6 +257,9 @@ If the authentication service rejects the request at the ingress, it is never pa
 One implication of this is that all access to services in the Science Platform, including access to services from the Notebook Aspect and service-to-service access, must go through the ingress.
 This is not the default in Kubernetes; by default, applications running within the same Kubernetes cluster can access the ``Service`` or even ``Pod`` of another service directly without using the ingress.
 Correct use of the authentication service therefore requires blocking non-ingress access to other services via, for example, a Kubernetes ``NetworkPolicy``.
+
+TLS is required for all traffic between the user and the Science Platform.
+Communications internal to the Science Platform need not use TLS provided that they happen only within a restricted private network specific to that Science Platform deployment.
 
 Use cases
 ---------
