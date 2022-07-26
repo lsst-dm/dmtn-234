@@ -21,7 +21,7 @@ For a list of remaining work, see the `remaining work section of SQR-069 <https:
 Science Platform deployments
 ============================
 
-Addresses requirement DMS-LSP-REQ-0032 (Multiple Installations).
+*Addresses requirement DMS-LSP-REQ-0032 (Multiple Installations).*
 
 There is no single Rubin Science Platform.
 Instead, there are multiple deployments of the Science Platform at different sites with different users and different configurations.
@@ -121,7 +121,7 @@ Authentication is delegated to the identity provider and the Science Platform tr
 Federated identity
 ------------------
 
-Addresses requirements DMS-LSP-REQ-0023 (Use of External Identity Providers) and DMS-LSP-REQ-0024 (Use of Mutliple Sets of Credentials).
+*Addresses requirements DMS-LSP-REQ-0023 (Use of External Identity Providers) and DMS-LSP-REQ-0024 (Use of Mutliple Sets of Credentials).*
 
 General access deployments of the Science Platform will use identity federations as their primary source of user identity and authentication.
 The InCommon_ federation will be supported for the IDF and CDF.
@@ -256,7 +256,7 @@ As discussed in :ref:`Token authentication <token-auth>`, user tokens may have a
 Authentication flows
 ====================
 
-Addresses requirement DMS-LSP-REQ-0022 (Common Identity).
+*Addresses requirement DMS-LSP-REQ-0022 (Common Identity).*
 
 So far as possible, authentication and access control for Science Platform services will be handled by a separate authentication service interposed between the user request and the service backend.
 Service backends need only be aware of information exposed by the authentication service, not the precise mechanism the user used to authenticate.
