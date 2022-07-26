@@ -4,6 +4,10 @@ Abstract
 The identity management, authentication, and authorization component of the Rubin Science Platform is responsible for maintaining a list of authorized users and their associated identity information, authenticating their access to the Science Platform, and determining which services they are permitted to use.
 This tech note describes the high-level design of that system and summarizes its desired features and capabilities, independent of choice of implementation.
 
+LDM-554_ defines the general requirements for the Science Platform.
+This design generally addresses requirements DMS-LSP-REQ-0007 (Abide by the Data Access Policies), DMS-LSP-REQ-0020 (Authenticated User Access), and DMS-LSP-REQ-0027 (Privacy of User Activities) of that document.
+Where it addresses other requirements from LDM-554, those sections are marked with the relevant requirement identifiers.
+
 This is not a complete description of everything we want the identity management system to do, only a design for the portions that have been implemented to date.
 Designs for further components and features will be added to this document as they are completed.
 For a list of remaining work, see the `remaining work section of SQR-069 <https://sqr-069.lsst.io/#remaining>`__.
@@ -16,6 +20,8 @@ For a list of remaining work, see the `remaining work section of SQR-069 <https:
 
 Science Platform deployments
 ============================
+
+*Addresses requirement DMS-LSP-REQ-0032 (Multiple Installations).*
 
 There is no single Rubin Science Platform.
 Instead, there are multiple deployments of the Science Platform at different sites with different users and different configurations.
@@ -114,6 +120,8 @@ Authentication is delegated to the identity provider and the Science Platform tr
 
 Federated identity
 ------------------
+
+*Addresses requirements DMS-LSP-REQ-0023 (Use of External Identity Providers) and DMS-LSP-REQ-0024 (Use of Mutliple Sets of Credentials).*
 
 General access deployments of the Science Platform will use identity federations as their primary source of user identity and authentication.
 The InCommon_ federation will be supported for the IDF and CDF.
@@ -248,6 +256,8 @@ As discussed in :ref:`Token authentication <token-auth>`, user tokens may have a
 Authentication flows
 ====================
 
+*Addresses requirement DMS-LSP-REQ-0022 (Common Identity).*
+
 So far as possible, authentication and access control for Science Platform services will be handled by a separate authentication service interposed between the user request and the service backend.
 Service backends need only be aware of information exposed by the authentication service, not the precise mechanism the user used to authenticate.
 
@@ -259,6 +269,7 @@ This is not the default in Kubernetes; by default, applications running within t
 Correct use of the authentication service therefore requires blocking non-ingress access to other services via, for example, a Kubernetes ``NetworkPolicy``.
 
 TLS is required for all traffic between the user and the Science Platform.
+(See requirement DMS-LSP-REQ-0026, Using Secure Protocols.)
 Communications internal to the Science Platform need not use TLS provided that they happen only within a restricted private network specific to that Science Platform deployment.
 
 Use cases
@@ -510,6 +521,10 @@ DMTN-225_
 DMTN-235_
     Lists and defines the scopes used by the Science Platform.
 
+LDM-554_
+    General requirements document for the Science Platform.
+    This includes some requirements for the identity management system.
+
 RDO-013_
     The Vera C. Rubin Observatory Data Policy, which defines who will have access to Rubin Observatory data.
 
@@ -520,6 +535,7 @@ SQR-069_
 .. _DMTN-224: https://dmtn-224.lsst.io/
 .. _DMTN-225: https://dmtn-225.lsst.io/
 .. _DMTN-235: https://dmtn-235.lsst.io/
+.. _LDM-554: https://ldm-554.lsst.io/
 .. _RDO-013: https://docushare.lsst.org/docushare/dsweb/Get/RDO-13/
 .. _SQR-069: https://sqr-069.lsst.io/
 
