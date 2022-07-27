@@ -48,7 +48,8 @@ Required infrastructure
 In order to deploy the Science Platform's identity management component, the hosting environment for that Science Platform deployment must provide:
 
 - A Kubernetes cluster running a recent version of Kubernetes.
-  The Science Platform is primarily tested against the "regular" channel of Google Kubernetes Engine and may not work on older versions of Kubernetes.
+  The Science Platform, including the identity management system, only supports Kubernetes and will not run in any other environment.
+  It is primarily tested against the "regular" channel of Google Kubernetes Engine and may not work on older versions of Kubernetes.
 
 - Load balancing and IP allocation for an ingress controller.
   This will be used by ingress-nginx to allocate its external IP and to receive external traffic.
@@ -97,9 +98,9 @@ Security model
 
 The identity management system attempts to provide the following security services:
 
-- Incoming web requests will not be allowed through to the protected service unless they present a valid token.
+- Incoming web requests will not be allowed through to the protected service unless they present valid authentication credentials.
 
-- Unauthenticated browser users will be sent to a configured authentication provider and then returned to the service they are attempting to access.
+- Unauthenticated browser users will be sent to a configured identity provider and then returned to the service they are attempting to access after successful authentication.
 
 - Authentication credentials expire at a configurable interval, forcing reauthentication.
   As an exception, user tokens may be created without an expiration.
@@ -116,10 +117,12 @@ In providing those services, it attempts to maintain the following properties:
   See the discussion below.)
 
 - Authentication credentials delegated to Science Platform services are opaque and must be validated by the identity management system on each use.
+  Revoking an authentication credential therefore takes immediate effect.
+  There is no need for applications to maintain revocation lists, or for administrators to plan around revoked credentials still being valid through an expiration time.
 
 - The identity management system itself is hardened against common web security attacks, specifically session fixation on initial authentication, CSRF on token creation and deletion, cookie theft, and open redirects from the login and logout handlers.
 
-- Access to the underlying storage for the authentication and authorization component does not allow the attacker to bypass authentication checks.
+- Access to only the underlying storage for the authentication and authorization component does not allow the attacker to bypass authentication checks.
   The contents of the storage are protected by a key held by the authentication service and stored separately.
 
 The identity management system does not attempt to protect against the following threats:
