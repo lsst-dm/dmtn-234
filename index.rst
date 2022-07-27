@@ -92,6 +92,62 @@ Here is a sample diagram for a restricted access environment using a local OpenI
    Both services receive user requests.
    Service A also sends requests to service B.
 
+Security model
+==============
+
+The identity management system attempts to provide the following security services:
+
+- Incoming web requests will not be allowed through to the protected service unless they present a valid token.
+
+- Unauthenticated browser users will be sent to a configured authentication provider and then returned to the service they are attempting to access.
+
+- Authentication credentials expire at a configurable interval, forcing reauthentication.
+  As an exception, user tokens may be created without an expiration.
+  This is not ideal from a security perspective, but the reduction in user hassle and documentation complexity is a worthwhile security trade-off.
+
+- Users may create (and delete) new tokens for use outside the browser, but the access granted by such tokens is limited to the access available to the user creating the token.
+
+- Tokens to act on behalf of the user are only issued to protected applications on request, are marked with the application to which they were issued, and can be restricted in scope.
+
+In providing those services, it attempts to maintain the following properties:
+
+- Authentication cookies are tamper-resistent.
+  (However, they are still bearer cookies and can be copied and reused.
+  See the discussion below.)
+
+- Authentication credentials delegated to Science Platform services are opaque and must be validated by the identity management system on each use.
+
+- The identity management system itself is hardened against common web security attacks, specifically session fixation on initial authentication, CSRF on token creation and deletion, cookie theft, and open redirects from the login and logout handlers.
+
+- Access to the underlying storage for the authentication and authorization component does not allow the attacker to bypass authentication checks.
+  The contents of the storage are protected by a key held by the authentication service and stored separately.
+
+The identity management system does not attempt to protect against the following threats:
+
+- Web security vulnerabilities in the protected application.
+  Gafaelfawr only provides authentication gating.
+  After authorization, the web request and response from the protected application are not modified and no additional security properties are added.
+  (However, some facilities to assist the application with this may be added in the future.
+  See DMTN-193_ for more details.)
+
+- Compromise of the internal Kubernetes network of the Science Platform deployment.
+  The identity management system does not require or support TLS or other network security measures inside the Kubernetes network.
+  It assumes internal Kubernetes network traffic cannot be intercepted or tampered with.
+
+- Cookie or token theft.
+  The identity management system relies on the security of the browser cookie cache and the security properties of HTTP cookies to protect its session cookie from theft.
+  An attacker who is able to steal the cookie is able to impersonate the user from whom they stole the cookie.
+  Similarly, the system issues bearer tokens on user request, and those tokens are sufficient for authentication.
+  The identity management system does not protect against token mishandling or theft.
+  This is not ideal, but doing something better requires security infrastructure for clients of the Rubin Science Platform that isn't realistically available.
+
+- Compromise of internal secrets.
+  If an attacker gains access to the Kubernetes secrets or the running pods for identity management system components, that attacker will be able to impersonate any user.
+
+- Manipulation of the underlying storage.
+  The important information is encrypted and integrity-protected, but an attacker with direct storage access could trivially cause a denial of service by deleting user sessions and erase historic log data.
+  The storage scheme only prevents an attacker with storage but not application access from creating tokens for arbitrary identities or modify existing tokens.
+
 User identity
 =============
 
