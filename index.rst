@@ -29,18 +29,31 @@ Science Platform deployments
 
 There is no single Rubin Science Platform.
 Instead, there are multiple deployments of the Science Platform at different sites with different users and different configurations.
-These can be divided into two general classes.
-Each class has slightly different authentication and identity management requirements.
+As far as the identity management system is concerned, those configurations vary only in how users authenticate and where identity information about the users (full name, email address, group memberships, etc.) comes from.
 
-General access
-    Provides access to the Science Platform to the general astronomy community according to the Rubin Observatory Data Policy (RDO-013_).
+There are three supported configurations:
+
+Federated identity
+    Users authenticate via an identity federation such as InCommon, normally using the authentication system of their home institution.
+    Google and GitHub are also supported as sources of authentication.
+    Users maintain their own identity information (seeded by information from the identity federation).
+    Science Platform administrators and users themselves create groups and maintain their memberships.
+
+    This is the approach used for Science Platform deployments intended to provide services to the general astronomy community according to the Rubin Observatory Data Policy (RDO-013_).
     Users of these facilities may have no specific affiliation with Rubin Observatory other than being data rights holders.
     Examples include the :abbr:`IDF (Interim Data Facility)`, :abbr:`CDF (Cloud Data Facility)`, and possibly other International Data Facilities or Data Access Centers.
 
-Restricted access
-    Dedicated deployments of the Science Platform may be used to support telescope operations, data processing, or other purposes.
-    These deployments will only be accessible to telescope operators, project scientists, and others with a direct affiliation with Rubin Observatory.
-    Some data facilities and data access centers may also deploy the Science Platform for use only by a restricted set of users.
+GitHub
+    All users authenticate via GitHub, and their identity information is obtained from their GitHub profile.
+    Group membership is based on the user's membership in GitHub organizations and teams.
+
+    This approach is used for some internal test, development, and project support deployments of the Science Platform.
+    It is the easiest configuration to deploy quickly without supporting infrastruture, provided that the restriction to GitHub as an authentication system is acceptable.
+
+Local identity system
+    Users are directed to a local OpenID Connect identity provider for authentication, and user identity information comes from either that identity provider or from a local LDAP server.
+
+    This approach is used for the :abbr:`USDF (United States Data Facility)` and other deployments that want to use a local identity management system, usually because they are intended only for Rubin Observatory affiliates or users local to the facility managing the deployment.
 
 Every deployment of the Science Platform is a separate identity and authentication domain (with the possible exception of some closely-linked deployments used for testing and integration).
 Access to one deployment of the Science Platform does not grant access to a different deployment of the Science Platform.
@@ -70,12 +83,12 @@ Due to the specific requirements around auth subrequest handling, the Science Pl
 Component overview
 ==================
 
-A general access deployment of the Science Platform has, at a high level, the following structure for handling authentication and identity management for two Science Platform services.
+A federated identity deployment of the Science Platform has, at a high level, the following structure for handling authentication and identity management for two Science Platform services.
 Both services receive user requests, and service A also sends requests to service B.
 (The deployment would have multiple services, not just two services as shown.)
 
-.. figure:: /_static/general-access.png
-   :name: General access deployment architecture
+.. figure:: /_static/federated.png
+   :name: Federated identity deployment architecture
 
    High-level structure of authentication and identity management for two services that receive user requests.
    Service A also sends requests to service B.
@@ -86,14 +99,15 @@ This is true in the current implementation but need not be the case in the desig
 
 The Kubernetes ingress verifies authentication and access control on each request with a subquery to the authentication service (labeled Authentication in this diagram).
 
-Restricted access environments have a wider range of configurations.
-The identity provider may be GitHub or may be a local OpenID Connect provider, LDAP may or may not be in use, and so forth.
-Here is a sample diagram for a restricted access environment using a local OpenID Connect identity provider and using LDAP as the data store for identity information.
+The diagram for GitHub is similar, except that GitHub serves as both the identity provider and the identity management system.
 
-.. figure:: /_static/restricted-access.png
-   :name: Sample restricted access deployment architecture
+Local identity management deployments have more variation, since they may or may not use LDAP.
+Here is a sample diagram for deployment that uses local identity management with an OpenID Connect identity provider and LDAP as the data store for identity information.
 
-   Sample high-level structure of authentication and identity management in a restricted access deployment using OpenID Connect and LDAP.
+.. figure:: /_static/local.png
+   :name: Sample local identity provider deployment architecture
+
+   Sample high-level structure of authentication and identity management in a deployment using a local OpenID Connect provider and LDAP.
    Both services receive user requests.
    Service A also sends requests to service B.
 
@@ -158,12 +172,11 @@ The identity management system does not attempt to protect against the following
 User identity
 =============
 
-Users of a general access Science Platform deployment will access it via a federated identity provider.
-They will authenticate using their account at their local institution, or their choice of a cloud identity provider such as GitHub or Google.
+Users of deployments that use federated identity will authenticate using their account at their local institution, or their choice of a cloud identity provider such as GitHub or Google.
 That institution will, in turn, release their identity to the Science Platform.
 This source of identity is discussed in detail in :ref:`Federated identity <federated-identity>`.
 
-Restricted access deployments of the Science Platform may chose from one of two sources of user identity:
+The other two options are:
 
 #. GitHub
 #. Local identity provider supporting OpenID Connect
@@ -186,13 +199,12 @@ Federated identity
 
 *Addresses requirements DMS-LSP-REQ-0023 (Use of External Identity Providers) and DMS-LSP-REQ-0024 (Use of Mutliple Sets of Credentials).*
 
-General access deployments of the Science Platform will use identity federations as their primary source of user identity and authentication.
-The InCommon_ federation will be supported for the IDF and CDF.
-Other federations may be supported.
+Deployments of the Science Platform that use federated identity will support the InCommon_ federation.
+Other federations may also be supported.
 
 .. _InCommon: https://incommon.org/
 
-A new user of a general access deployment will go through an enrollment process.
+A new user of a deployment using federated identity will go through an enrollment process.
 This process will gather the user's identity information as released by their federated identity provider (name, email, and institutional affiliation), and allow the user to select a username for use with the Science Platform.
 Usernames will be unique across the Science Platform and must satisfy the requirements given in DMTN-225_.
 If the user chooses, they can also specify a name and email address for the Science Platform to use in preference to the one released by their identity provider.
@@ -224,7 +236,7 @@ Tokens
 All authentication of browser or API access to the Science Platform except the identity management system is done with bearer tokens.
 These are short, random strings that function as lookup keys for active user authentication sessions.
 
-The identity management system of a general access deployment is a special case.
+The identity management system of a deployment using federated identity is a special case.
 It is only accessible via a web browser and uses identity information from the federated identity provider directly.
 Tokens cannot be used to access the identity management system.
 
@@ -385,8 +397,8 @@ Browser authentication
 ----------------------
 
 If a user goes to a Science Platform web page without currently being authenticated, they will be sent to a login provider to authenticate.
-For general access deployments, this will be a federated login provider that will allow them to choose their federated identity provider (or will remember their previous selection if desired and automatically send them there).
-For restricted access deployments, this will be whatever the source of authentication is configured to be, either GitHub or an OpenID Connect provider.
+This may be a federated login provider that will allow them to choose their federated identity provider (or will remember their previous selection if desired and automatically send them there).
+Alternately, it could be GitHub or a local OpenID Connect provider.
 
 The Science Platform authentication system will perform an OpenID Connect or (for GitHub) OAuth 2.0 authentication with the login provider and use that to obtain the user's identity.
 It will then obtain any other needed information about the user (numeric UID, group membership and numeric GIDs, full name, email address, etc.) following the rules for sources of user information defined in DMTN-225_.
@@ -394,7 +406,7 @@ From that information, a session token will be created with scopes based on the 
 That session token will be stored in the user's browser, restricted to that installation of the Science Platform.
 Then, the user will be redirected back to the page they were attempting to visit, now with authentication.
 
-As a special case, if the user is accessing the identity management system of a general access deployment of the Science Platform, no session token is created or used.
+As a special case, if the user is accessing the identity management system of a deployment of the Science Platform using federated identity, no session token is created or used.
 The OpenID Connect authentication is used directly to authenticate access to the identity management system.
 
 The session token stored in the browser will expire periodically, forcing the user to reauthenticate, so that stolen browser credentials cannot be reused indefinitely and the user's scopes are recalculated based on their current group membership.
@@ -517,18 +529,19 @@ The group membership of the user is also provided to each service in an HTTP hea
 
 The source of the user's group membership information varies by type of Science Platform deployment.
 
-For restricted access deployments, group membership is taken from the user's GitHub teams, from an LDAP server configured as the source of identity information for that deployment, or from the token issued by an OpenID Connect authentication service.
+For deployments using GitHub, group membership is taken from the user's GitHub teams.
+For deployments using a local identity provider, group membership comes either from a local LDAP server or from the token issued by an OpenID Connect authentication service.
 
-For general access deployments, group membership is maintained in the identity management system.
+For deployments using federated identity, group membership is maintained in the identity management system.
 Users will be added to appropriate access groups during enrollment by the approver.
 Users may also create their own groups, and add and remove members from those groups as they see fit.
 Collaborations using the Science Platform may also maintain groups of their members or affiliates.
 
-In addition to those groups, in general access deployments, every user will also be a member of a group with the same name as their username.
+In addition to those groups, in federated identity deployments every user will also be a member of a group with the same name as their username.
 That group will have only one member, the matching user.
 This allows services that make access decisions based on groups to uniformly use group membership for all access decisions, without having to special-case access rules for individual users.
 It also provides the user with a default group for services that use an underlying POSIX file system, such as the Notebook Aspect.
-Restricted access deployments will generally also follow this convention, but they're not required to.
+GitHub and local OpenID Connect deployments will generally also follow this convention, but they're not required to.
 
 Access control decisions based on group membership must be made by individual services.
 The authentication service only applies access restrictions based on scopes, and otherwise passes the group information to the service for it to do with as it sees fit.
@@ -544,11 +557,11 @@ Users therefore need numeric UIDs and GIDs to access those portions of the Scien
 
 Every user is optionally assigned a numeric UID.
 (The numeric UID may be required for access to some services.)
-For restricted access deployments, that UID may come from an external source, such as GitHub, a local LDAP server, or an OpenID Connect ID token.
-For general access deployments, user UIDs are assigned and recorded inside the identity management system.
+For deployments using federated identity, user UIDs are assigned and recorded inside the identity management system.
+Otherwise, that UID will come from an external source such as GitHub, a local LDAP server, or an OpenID Connect ID token.
 
 Each group is similarly optionally assigned a numeric GID.
-In general access deployments, and by preference in restricted access deployments, the GID for the group with the same name as the user is the same as the UID.
+In federated identity deployments, and by preference for all deployments, the GID for the group with the same name as the user is the same as the UID.
 
 For further details on UID and GID assignment, see DMTN-225_.
 

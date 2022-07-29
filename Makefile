@@ -31,14 +31,13 @@ help:
 clean:
 	rm -rf $(BUILDDIR)/*
 
-images: _static/general-access.png _static/restricted-access.png \
-	_static/tokens.svg
+images: _static/federated.png _static/local.png _static/tokens.svg
 
-_static/general-access.png: _static/general-access.py
-	python _static/general-access.py
+_static/federated.png: _static/federated.py
+	python _static/federated.py
 
-_static/restricted-access.png: _static/restricted-access.py
-	python _static/restricted-access.py
+_static/local.png: _static/local.py
+	python _static/local.py
 
 _static/tokens.svg: _static/tokens.diag
 	blockdiag -Tsvg _static/tokens.diag
