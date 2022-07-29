@@ -5,10 +5,8 @@ import os
 from diagrams import Cluster, Diagram, Edge
 from diagrams.gcp.compute import KubernetesEngine
 from diagrams.gcp.network import LoadBalancing
-from diagrams.generic.storage import Storage
 from diagrams.onprem.client import User
 from diagrams.onprem.compute import Server
-from diagrams.onprem.identity import Dex
 
 os.chdir(os.path.dirname(__file__))
 
@@ -26,25 +24,28 @@ node_attr = {
 }
 
 with Diagram(
-    "Restricted access deployment",
+    "General access deployment",
     show=False,
-    filename="restricted-access",
+    filename="federated",
     outformat="png",
     graph_attr=graph_attr,
     node_attr=node_attr,
 ):
     user = User("End user")
-    idp = Server("OpenID Connect\nprovider")
-    ldap = Storage("LDAP")
+    idp = Server("Identity provider")
 
-    with Cluster("Kubernetes"):
-        ingress = LoadBalancing("Ingress")
-        gafaelfawr = KubernetesEngine("Authentication")
-        service_a = KubernetesEngine("Service A")
-        service_b = KubernetesEngine("Service B")
+    with Cluster("Science Platform"):
+        idm = Server("Identity management")
 
-    user >> idp >> gafaelfawr
-    gafaelfawr << ldap
+        with Cluster("Kubernetes"):
+            ingress = LoadBalancing("Ingress")
+            gafaelfawr = KubernetesEngine("Authentication")
+            service_a = KubernetesEngine("Service A")
+            service_b = KubernetesEngine("Service B")
+
+    user >> idp
+    user >> idm
+    idp - idm >> gafaelfawr
     user >> ingress >> gafaelfawr
     ingress >> service_a
     ingress >> service_b
