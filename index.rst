@@ -401,7 +401,7 @@ This may be a federated login provider that will allow them to choose their fede
 Alternately, it could be GitHub or a local OpenID Connect provider.
 
 The Science Platform authentication system will perform an OpenID Connect or (for GitHub) OAuth 2.0 authentication with the login provider and use that to obtain the user's identity.
-It will then obtain any other needed information about the user (numeric UID, group membership and numeric GIDs, full name, email address, etc.) following the rules for sources of user information defined in DMTN-225_.
+It will then obtain any other needed information about the user (numeric UID, primary GID, group membership and numeric GIDs, full name, email address, etc.) following the rules for sources of user information defined in DMTN-225_.
 From that information, a session token will be created with scopes based on the user's group membership.
 That session token will be stored in the user's browser, restricted to that installation of the Science Platform.
 Then, the user will be redirected back to the page they were attempting to visit, now with authentication.
@@ -544,7 +544,7 @@ This allows services that make access decisions based on groups to uniformly use
 It also provides the user with a default group for services that use an underlying POSIX file system, such as the Notebook Aspect.
 
 GitHub deployments also use user private groups with the same GID as the user's UID.
-Local OpenID Connect deployments may or may not, depending on the group management policies of the local identity provider.
+Local OpenID Connect deployments must provide a primary GID for each user, but that GID may or may not be for a user private group.
 
 Access control decisions based on group membership must be made by individual services.
 The authentication service only applies access restrictions based on scopes, and otherwise passes the group information to the service for it to do with as it sees fit.
@@ -558,19 +558,19 @@ UIDs and GIDs
 Portions of the Science Platform, particularly the Notebook Aspect, will use an underlying POSIX file system.
 Users therefore need numeric UIDs and GIDs to access those portions of the Science Platform, since those will be used for access control in the POSIX file system.
 
-Every user is optionally assigned a numeric UID.
-(The numeric UID may be required for access to some services.)
-For deployments using federated identity, user UIDs are assigned and recorded inside the identity management system.
-Otherwise, that UID will come from an external source such as GitHub, a local LDAP server, or an OpenID Connect ID token.
+Every user is must be assigned a numeric UID and primary GID, and every group is assigned a numeric GID.
 
-Every user is also optionally assigned a primary GID.
-(As with UID, this may be required for access to some services.)
-For deployments using federated or GitHub identity, the primary GID will be the same as their UID and will correspond to the gruop with the same name as the user's username (their user private group).
-For local OpenID Connect deployments, whether a primary GID is set and, if so, where it comes from will depend on the local configuration.
+For deployments using federated identity, UIDs and GIDs are assigned and recorded inside the identity management system.
+The primary GID for a user will be equal to the UID and will correspond to the GID for the user private group.
 
-Each group is assigned a numeric GID.
+For deployments using GitHub, UIDs and GIDs come from GitHub.
+A user private group with a GID matching that UID will be synthesized and added to the user's group membership.
+
+For deployments using a local identity management system, that system must provide the UIDs and GIDs for the user and their groups, either via LDAP or from an OpenID Connect ID token.
 
 For further details on UID and GID assignment, see DMTN-225_.
+
+Identities used for :ref:`service-to-service authentication <service-auth>` internal to a deployment exceptionally may not have UIDs or GIDs if they don't need to authenticate to services that require them.
 
 .. _token-api:
 
