@@ -538,10 +538,13 @@ Users may also create their own groups, and add and remove members from those gr
 Collaborations using the Science Platform may also maintain groups of their members or affiliates.
 
 In addition to those groups, in federated identity deployments every user will also be a member of a group with the same name as their username.
-That group will have only one member, the matching user.
+That group will have only one member, the matching user, and it will be the user's primary GID.
+(This is commonly called a user private group.)
 This allows services that make access decisions based on groups to uniformly use group membership for all access decisions, without having to special-case access rules for individual users.
 It also provides the user with a default group for services that use an underlying POSIX file system, such as the Notebook Aspect.
-GitHub and local OpenID Connect deployments will generally also follow this convention, but they're not required to.
+
+GitHub deployments also use user private groups with the same GID as the user's UID.
+Local OpenID Connect deployments may or may not, depending on the group management policies of the local identity provider.
 
 Access control decisions based on group membership must be made by individual services.
 The authentication service only applies access restrictions based on scopes, and otherwise passes the group information to the service for it to do with as it sees fit.
@@ -560,8 +563,12 @@ Every user is optionally assigned a numeric UID.
 For deployments using federated identity, user UIDs are assigned and recorded inside the identity management system.
 Otherwise, that UID will come from an external source such as GitHub, a local LDAP server, or an OpenID Connect ID token.
 
-Each group is similarly optionally assigned a numeric GID.
-In federated identity deployments, and by preference for all deployments, the GID for the group with the same name as the user is the same as the UID.
+Every user is also optionally assigned a primary GID.
+(As with UID, this may be required for access to some services.)
+For deployments using federated or GitHub identity, the primary GID will be the same as their UID and will correspond to the gruop with the same name as the user's username (their user private group).
+For local OpenID Connect deployments, whether a primary GID is set and, if so, where it comes from will depend on the local configuration.
+
+Each group is assigned a numeric GID.
 
 For further details on UID and GID assignment, see DMTN-225_.
 
