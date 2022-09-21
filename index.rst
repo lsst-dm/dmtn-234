@@ -122,7 +122,7 @@ The identity management system attempts to provide the following security servic
 
 - Authentication credentials expire at a configurable interval, forcing reauthentication.
   As an exception, user tokens may be created without an expiration.
-  This is not ideal from a security perspective, but the reduction in user hassle and documentation complexity is a worthwhile security trade-off.
+  This exception is not ideal from a security perspective, but the reduction in user hassle and documentation complexity is a worthwhile security trade-off.
 
 - Users may create (and delete) new tokens for use outside the browser, but the access granted by such tokens is limited to the access available to the user creating the token.
 
@@ -472,11 +472,15 @@ These come in two types: internal tokens and notebook tokens.
 If a server is so configured, the authentication system will issue a new internal or notebook token for that service (or reuse an existing one if appropriate).
 For internal tokens, this will be limited in scope to only the permissions that service needs and with an expiration time set.
 The service will receive this new token as part of the request, in an HTTP header, and can then use the token to make subsequent subrequests required to respond to the user's request.
+The lifetime of this token will be capped at the lifetime of the parent token on which it's based.
 
 As a special case, the Notebook Aspect of the Science Platform is intended as a general-purpose computing platform for the user and should have all of the same access that the user themselves have.
 The Notebook Aspect (and only it) will therefore get a notebook token rather than an internal token.
 This is a special case of an internal token that has all of the same scopes as the user's original session token, and is associated with the user's notebook server.
 It may have a lifetime limited to the lifetime of the user's notebook server.
+
+Services that know they may need to use the token for some period of time (for long-running operations, for example) can request that the token have a minimum remaining lifetime.
+Since the lifetime of the delegated token can be no longer than the lifetime of its parent token, this may force the user to reauthenticate before accessing the service if their token does not have sufficient remaining lifetime.
 
 ``Authorization`` headers used for token authentication should be (but are not yet) filtered out of the request so that they are not passed down to the underlying Science Platform service.
 Otherwise, a service could recover the user's original token from the HTTP headers of the request.
