@@ -304,6 +304,8 @@ Scopes come originally from the user's group membership.
 When they authenticate to the Science Platform with a web browser and get a session token, that token is given a list of scopes according to a per-deployment mapping of groups to scopes.
 Any subsequent notebook tokens created from that session token receive the same scopes.
 Internal tokens created from that token have at most the same scopes, usually fewer (since they will be restricted to only the scopes necessary for subrequests).
+The same is true of user tokens: they have at most the same scopes.
+The user may choose which of the scopes in their session token they want to grant to a newly-created user token.
 
 Scopes are used for "coarse-grained" access control: whether a user can access a specific component or API at all, or whether the user is allowed to access administrative interfaces for a service.
 "Fine-grained" access control decisions made by services, such as whether a user with general access to the service is able to run a specific query or access a specific image, are instead made based on the user's group membership.
@@ -585,11 +587,11 @@ All actions on tokens — issuing them, revoking them, modifying them, retrievin
 Authentication to that REST API is via either cookie or bearer token in an ``Authorization`` header, the same as any other Science Platform API.
 The browser-based user interface for creating and manipulating user tokens described in :ref:`Token authentication <token-auth>` is implemented on top of that REST API.
 
-Any user authenticated with a token having ``user:token`` scope (given to all session tokens by default, but often not delegated to user tokens) can list, create, revoke, modify, and see the history for their own tokens.
+Any user authenticated with a token having ``user:token`` scope (given to all session tokens by default, but often not delegated to user tokens) can list, create, revoke, and see the history for their own tokens.
 Anyone in possession of a token can get the data associated with that token (its scopes, expiration, and so forth) and the identity data for the user associated with that token (full name if known, email address, UID, group membership, and so forth) via the token API by authenticating with that token.
 This can be used by services making or processing subrequests (see :ref:`Subrequest authentication <subrequest-auth>`).
 
-Administrators with a token having ``admin:token`` scope can take all of those same actions on behalf of the user; can add, remove, or list administrators (whose session tokens receive the ``admin:token`` scope when they authenticate); can create new tokens on behalf of arbitrary users; and can do global queries on all tokens, token history, and any other data stored by the authentication service.
+Administrators with a token having ``admin:token`` scope can take all of those same actions on behalf of the user; can add, remove, or list administrators (whose session tokens receive the ``admin:token`` scope when they authenticate); can create new tokens on behalf of arbitrary users or modify arbitrary user tokens; and can do global queries on all tokens, token history, and any other data stored by the authentication service.
 Administrators cannot get the secret portion of existing tokens without having possession of the token.
 
 References
