@@ -8,9 +8,9 @@ Abstract
 The identity management, authentication, and authorization component of the Rubin Science Platform is responsible for maintaining a list of authorized users and their associated identity information, authenticating their access to the Science Platform, and determining which services they are permitted to use.
 This tech note describes the high-level design of that system and summarizes its desired features and capabilities, independent of choice of implementation.
 
-LDM-554_ defines the general requirements for the Science Platform.
+:ldm:`554` defines the general requirements for the Science Platform.
 This design generally addresses requirements DMS-LSP-REQ-0007 (Abide by the Data Access Policies), DMS-LSP-REQ-0020 (Authenticated User Access), and DMS-LSP-REQ-0027 (Privacy of User Activities) of that document.
-Where it addresses other requirements from LDM-554, those sections are marked with the relevant requirement identifiers.
+Where it addresses other requirements from :ldm:`554`, those sections are marked with the relevant requirement identifiers.
 
 This is not a complete description of everything we want the identity management system to do, only a design for the portions that have been implemented to date.
 Designs for further components and features will be added to this document as they are completed.
@@ -19,7 +19,7 @@ For a list of remaining work, see the `remaining work section of SQR-069 <https:
 .. note::
 
    This is part of a tech note series on identity management for the Rubin Science Platform.
-   The other two primary documents are DMTN-224_, which describes the implementation; and SQR-069_, which provides a history and analysis of the decisions underlying the design and implementation.
+   The other two primary documents are :dmtn:`224`, which describes the implementation; and :sqr:`069`, which provides a history and analysis of the decisions underlying the design and implementation.
    See the `references section of DMTN-224 <https://dmtn-224.lsst.io/#references>`__ for a complete list of related documents.
 
 Science Platform deployments
@@ -149,7 +149,7 @@ The identity management system does not attempt to protect against the following
   Gafaelfawr only provides authentication gating.
   After authorization, the web request and response from the protected application are not modified and no additional security properties are added.
   (However, some facilities to assist the application with this may be added in the future.
-  See DMTN-193_ for more details.)
+  See :dmtn:`193` for more details.)
 
 - Compromise of the internal Kubernetes network of the Science Platform deployment.
   The identity management system does not require or support TLS or other network security measures inside the Kubernetes network.
@@ -174,18 +174,18 @@ User identity
 
 Users of deployments that use federated identity will authenticate using their account at their local institution, or their choice of a cloud identity provider such as GitHub or Google.
 That institution will, in turn, release their identity to the Science Platform.
-This source of identity is discussed in detail in :ref:`Federated identity <federated-identity>`.
+This source of identity is discussed in detail in :ref:`federated-identity`.
 
 The other two options are:
 
 #. GitHub
 #. Local identity provider supporting OpenID Connect
 
-If GitHub is used as the identity provider, identity information will be taken from the user's GitHub account information, and the user's groups (see :ref:`Groups <groups>`) will be derived from the user's organization and team memberships on GitHub.
+If GitHub is used as the identity provider, identity information will be taken from the user's GitHub account information, and the user's groups (see :ref:`groups`) will be derived from the user's organization and team memberships on GitHub.
 If a local identity provider is used, identity and group information will be read either from an associated LDAP server or from the identity token provided by the OpenID Connect authentication process.
 
 In all cases, the user identity provider is also the primary source of user authentication.
-After a user has authenticated via their identity provider, they may create an authentication token for programmatic access to the Science Platform (see :ref:`Token authentication <token-auth>`).
+After a user has authenticated via their identity provider, they may create an authentication token for programmatic access to the Science Platform (see :ref:`token-auth`).
 However, they must authenticate via their identity provider first.
 
 The Science Platform will not store or verify any user authentication information, such as passwords, access codes, or certificates, apart from the tokens issued by the Science Platform after a successful authentication.
@@ -206,7 +206,7 @@ Other federations may also be supported.
 
 A new user of a deployment using federated identity will go through an enrollment process.
 This process will gather the user's identity information as released by their federated identity provider (name, email, and institutional affiliation), and allow the user to select a username for use with the Science Platform.
-Usernames will be unique across the Science Platform and must satisfy the requirements given in DMTN-225_.
+Usernames will be unique across the Science Platform and must satisfy the requirements given in :dmtn:`225`.
 If the user chooses, they can also specify a name and email address for the Science Platform to use in preference to the one released by their identity provider.
 The user will be required to verify that they can receive email at the email address they specify.
 
@@ -241,23 +241,23 @@ It is only accessible via a web browser and uses identity information from the f
 Tokens cannot be used to access the identity management system.
 
 Tokens come in five types.
-The uses of those token types are discussed in more detail in :ref:`Authentication flows <authentication>`.
+The uses of those token types are discussed in more detail in :ref:`authentication`.
 
 session
     Authenticates web access from a browser.
     This type of token is stored in the user's browser as or inside an HTTP cookie, and is sent by that browser to the Science Platform when the user attempts to access a non-public page.
-    See :ref:`Browser authentication <browser-auth>` for more details.
+    See :ref:`browser-auth` for more details.
 
 user
     An authentication token created by the user.
     The user generally authenticates with a session token to create a user token.
     These tokens are intended for use in programmatic access to the Science Platform from user-written programs or local applications.
-    See :ref:`Token authentication <token-auth>` for more details.
+    See :ref:`token-auth` for more details.
 
 internal
     Used for service-to-service authentication when a service makes a subrequest to another service as part of fulfilling a user request.
     These tokens are associated with the identity of the user making the original request, but have restricted access permissions and are also associated with the service making the subrequest.
-    See :ref:`Subrequest authentication <subrequest-auth>` for more details.
+    See :ref:`subrequest-auth` for more details.
 
 notebook
     A special case of an internal token used by the Notebook Aspect.
@@ -268,7 +268,7 @@ service
     The one type of authentication token not associated with a user.
     These tokens are used when one service wants to make an API call to another Science Platform service that is unrelated to a user request.
     For example, a monitoring service may want to make a test API call to another service to ensure that it is operating properly.
-    See :ref:`Service-to-service authentication <service-auth>` for more details.
+    See :ref:`service-auth` for more details.
 
 These tokens tend to organize into hierarchies, as shown in the following diagram.
 
@@ -309,9 +309,9 @@ The user may choose which of the scopes in their session token they want to gran
 
 Scopes are used for "coarse-grained" access control: whether a user can access a specific component or API at all, or whether the user is allowed to access administrative interfaces for a service.
 "Fine-grained" access control decisions made by services, such as whether a user with general access to the service is able to run a specific query or access a specific image, are instead made based on the user's group membership.
-(See :ref:`Groups <groups>` for more details.)
+(See :ref:`groups` for more details.)
 
-For a list of the scopes used by the Science Platform, their definitions, and the services to which they grant access, see DMTN-235_.
+For a list of the scopes used by the Science Platform, their definitions, and the services to which they grant access, see :dmtn:`235`.
 
 Child tokens
 ------------
@@ -326,7 +326,7 @@ When a token is revoked, all child tokens of that token are also immediately rev
 This happens when the user logs out in their web browser (revoking the session token and all child tokens of the session token), or when the user deletes a previously-created user token (revoking all child tokens of that user token).
 
 Although the user authenticates with a session token in order to create a user token, user tokens are not child tokens of the session token and have an independent lifetime.
-As discussed in :ref:`Token authentication <token-auth>`, user tokens may have a longer lifetime than the session token used to create them.
+As discussed in :ref:`token-auth`, user tokens may have a longer lifetime than the session token used to create them.
 
 .. _authentication:
 
@@ -403,7 +403,7 @@ This may be a federated login provider that will allow them to choose their fede
 Alternately, it could be GitHub or a local OpenID Connect provider.
 
 The Science Platform authentication system will perform an OpenID Connect or (for GitHub) OAuth 2.0 authentication with the login provider and use that to obtain the user's identity.
-It will then obtain any other needed information about the user (numeric UID, primary GID, group membership and numeric GIDs, full name, email address, etc.) following the rules for sources of user information defined in DMTN-225_.
+It will then obtain any other needed information about the user (numeric UID, primary GID, group membership and numeric GIDs, full name, email address, etc.) following the rules for sources of user information defined in :dmtn:`225`.
 From that information, a session token will be created with scopes based on the user's group membership.
 That session token will be stored in the user's browser, restricted to that installation of the Science Platform.
 Then, the user will be redirected back to the page they were attempting to visit, now with authentication.
@@ -415,7 +415,7 @@ The session token stored in the browser will expire periodically, forcing the us
 The user can also log out at any time, which revokes their session token, revokes any child tokens (notebook or internal, but not user) created from that session token, and forces reauthentication the next time they attempt to visit a page that requires authentication.
 
 The user's cookie holding their session token should not be passed down to individual Science Platform applications in a way that would allow that application to impersonate the user to different applications.
-This is not yet implemented, but is expected to be added to the design in the future by following the recommendations in DMTN-193_.
+This is not yet implemented, but is expected to be added to the design in the future by following the recommendations in :dmtn:`193`.
 
 .. _token-auth:
 
@@ -441,13 +441,10 @@ They can also set the token to never expire.
 
 The metadata associated with a user token (full name, email address, numeric UID, group membership, and so forth) will be the same as the user who created it.
 
-To authenticate with a user token, the user provides it in the ``Authoriztion`` header.
-The preferred way of doing so is as an `RFC 6750`_ bearer token.
-However, some astronomy applications may only support HTTP Basic Authentication (`RFC 7617`_), so it is supported as an alternative to the bearer token protocol.
+To authenticate with a user token, the user provides it in the ``Authorization`` header.
+The preferred way of doing so is as an :rfc:`6750` bearer token.
+However, some astronomy applications may only support HTTP Basic Authentication (:rfc:`7617`), so it is supported as an alternative to the bearer token protocol.
 When Basic Authentication is used, either the username or the password should be the token, and the other field should be set to ``x-oauth-basic``.
-
-.. _RFC 6750: https://datatracker.ietf.org/doc/html/rfc6750
-.. _RFC 7617: https://datatracker.ietf.org/doc/html/rfc7617
 
 User tokens cannot be used to access the identity management system to attach new federated identities, change the user's email address, change group memberships, or make any similar changes.
 They may only be used to access Science Platform services.
@@ -501,7 +498,7 @@ Services can ask for service tokens by creating a custom Kubernetes resource spe
 The authentication service will then provide that service token as a Kubernetes ``Secret`` resource associated with the request in the custom resource, and thereby make it available to the service pods through the normal Kubernetes mechanisms for injecting secrets into pods.
 The authentication service will also automatically refresh the service token to ensure that it does not expire.
 
-As specified in DMTN-225_, the usernames associated with all such tokens must begin with ``bot-``.
+As specified in :dmtn:`225`, the usernames associated with all such tokens must begin with ``bot-``.
 
 OpenID Connect authentication
 -----------------------------
@@ -517,12 +514,10 @@ At present, OpenID Connect authentication used in this fashion does not do any a
 All users with any access to that Science Platform deployment will be able to complete the OpenID Connect authentication.
 The protected service must do any necessary access control itself.
 
-The ID token returned by this OpenID Connect provider is a :abbr:`JWT (JSON Web Token)` (see `RFC 7519`_) that includes the user's username, full name (if available), and numeric UID (if available).
+The ID token returned by this OpenID Connect provider is a :abbr:`JWT (JSON Web Token)` (see :rfc:`7519`) that includes the user's username, full name (if available), and numeric UID (if available).
 No other information is provided to the protected service.
 
-.. _RFC 7519: https://datatracker.ietf.org/doc/html/rfc7519
-
-Note that this ID token is not a token as defined by :ref:`Tokens <tokens>` and cannot be used to authenticate to any other Science Platform service.
+Note that this ID token is not a token as defined by :ref:`tokens` and cannot be used to authenticate to any other Science Platform service.
 It is an implementation detail of the OpenID Connect authentication process.
 
 .. _groups:
@@ -530,8 +525,8 @@ It is an implementation detail of the OpenID Connect authentication process.
 Groups
 ======
 
-As discussed in :ref:`Scopes <scopes>`, when a user authenticates to the Science Platform with a web browser, their group membership is retrieved and they are granted scopes based on their group membership.
-The group membership of the user is also provided to each service in an HTTP header, and is available via the :ref:`Token API <token-api>` on request from any service receiving a delegated token (see :ref:`Subrequest authentication <subrequest-auth>`).
+As discussed in :ref:`scopes`, when a user authenticates to the Science Platform with a web browser, their group membership is retrieved and they are granted scopes based on their group membership.
+The group membership of the user is also provided to each service in an HTTP header, and is available via the :ref:`token-api` on request from any service receiving a delegated token (see :ref:`subrequest-auth`).
 
 The source of the user's group membership information varies by type of Science Platform deployment.
 
@@ -556,7 +551,7 @@ Access control decisions based on group membership must be made by individual se
 The authentication service only applies access restrictions based on scopes, and otherwise passes the group information to the service for it to do with as it sees fit.
 In many cases, services will make subrequests on behalf of the user, and rely on access control by group membership to be imposed by lower-level services.
 
-For further details about the sources of group information and their naming constraints, see DMTN-225_.
+For further details about the sources of group information and their naming constraints, see :dmtn:`225`.
 
 UIDs and GIDs
 =============
@@ -574,7 +569,7 @@ A user private group with a GID matching that UID will be synthesized and added 
 
 For deployments using a local identity management system, that system must provide the UIDs and GIDs for the user and their groups, either via LDAP or from an OpenID Connect ID token.
 
-For further details on UID and GID assignment, see DMTN-225_.
+For further details on UID and GID assignment, see :dmtn:`225`.
 
 Identities used for :ref:`service-to-service authentication <service-auth>` internal to a deployment exceptionally may not have UIDs or GIDs if they don't need to authenticate to services that require them.
 
@@ -585,11 +580,11 @@ Token API
 
 All actions on tokens — issuing them, revoking them, modifying them, retrieving their associated data, retrieving their history, and so forth — may be done through a token REST API.
 Authentication to that REST API is via either cookie or bearer token in an ``Authorization`` header, the same as any other Science Platform API.
-The browser-based user interface for creating and manipulating user tokens described in :ref:`Token authentication <token-auth>` is implemented on top of that REST API.
+The browser-based user interface for creating and manipulating user tokens described in :ref:`token-auth` is implemented on top of that REST API.
 
 Any user authenticated with a token having ``user:token`` scope (given to all session tokens by default, but often not delegated to user tokens) can list, create, revoke, and see the history for their own tokens.
 Anyone in possession of a token can get the data associated with that token (its scopes, expiration, and so forth) and the identity data for the user associated with that token (full name if known, email address, UID, group membership, and so forth) via the token API by authenticating with that token.
-This can be used by services making or processing subrequests (see :ref:`Subrequest authentication <subrequest-auth>`).
+This can be used by services making or processing subrequests (see :ref:`subrequest-auth`).
 
 Administrators with a token having ``admin:token`` scope can take all of those same actions on behalf of the user; can add, remove, or list administrators (whose session tokens receive the ``admin:token`` scope when they authenticate); can create new tokens on behalf of arbitrary users or modify arbitrary user tokens; and can do global queries on all tokens, token history, and any other data stored by the authentication service.
 Administrators cannot get the secret portion of existing tokens without having possession of the token.
@@ -597,35 +592,29 @@ Administrators cannot get the secret portion of existing tokens without having p
 References
 ==========
 
-DMTN-193_
+:dmtn:`193`
     Discussion of web security for the Science Platform.
     This is primarily about implementation details, but the designs here for filtering some request headers and for using multiple domains for Science Platform services to limit the possible damage from credential leakage are relevant to the overall design.
 
-DMTN-224_
+:dmtn:`224`
     The implementation details of the Science Platform identity management system.
 
-DMTN-225_
+:dmtn:`225`
     Metadata gathered and stored for each user, including constraints such as valid username and group name patterns and UID and GID ranges.
 
-DMTN-235_
+:dmtn:`235`
     Lists and defines the scopes used by the Science Platform.
 
-LDM-554_
+:ldm:`554`
     General requirements document for the Science Platform.
     This includes some requirements for the identity management system.
 
 RDO-013_
     The Vera C. Rubin Observatory Data Policy, which defines who will have access to Rubin Observatory data.
 
-SQR-069_
+:sqr:`069`
     History and analysis of the decisions made during design and implementation of the Science Platform identity management system.
 
-.. _DMTN-193: https://dmtn-193.lsst.io/
-.. _DMTN-224: https://dmtn-224.lsst.io/
-.. _DMTN-225: https://dmtn-225.lsst.io/
-.. _DMTN-235: https://dmtn-235.lsst.io/
-.. _LDM-554: https://ldm-554.lsst.io/
 .. _RDO-013: https://docushare.lsst.org/docushare/dsweb/Get/RDO-13/
-.. _SQR-069: https://sqr-069.lsst.io/
 
 The `references section of DMTN-224 <https://dmtn-224.lsst.io/#references>`__ has a more complete list of tech notes related to RSP identity management, including historical and implementation tech notes.
