@@ -340,6 +340,7 @@ Service backends need only be aware of information exposed by the authentication
 
 The Science Platform requires Kubernetes, which handles this type of interposition via ``Ingress`` resources.
 If the authentication service rejects the request at the ingress, it is never passed to the backend service.
+The details of required authentication and authorization are configured in the ``Ingress`` resources of each Science Platform service, either directly (when necessary) or via a Kubernetes custom resource that is used to generate an ``Ingress`` resource with correct authentication and authorization configuration (preferred).
 
 One implication of this is that all access to services in the Science Platform, including access to services from the Notebook Aspect and service-to-service access, must go through the ingress.
 This is not the default in Kubernetes; by default, applications running within the same Kubernetes cluster can access the ``Service`` or even ``Pod`` of another service directly without using the ingress.
