@@ -443,7 +443,7 @@ The metadata associated with a user token (full name, email address, numeric UID
 To authenticate with a user token, the user provides it in the ``Authorization`` header.
 The preferred way of doing so is as an :rfc:`6750` bearer token.
 However, some astronomy applications may only support HTTP Basic Authentication (:rfc:`7617`), so it is supported as an alternative to the bearer token protocol.
-When Basic Authentication is used, either the username or the password should be the token, and the other field should be set to ``x-oauth-basic``.
+The token can be put in either the username or password field and the other field is ignored.
 
 User tokens cannot be used to access the identity management system to attach new federated identities, change the user's email address, change group memberships, or make any similar changes.
 They may only be used to access Science Platform services.
