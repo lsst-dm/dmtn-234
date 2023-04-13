@@ -392,6 +392,9 @@ This is a sampling of typical uses, not a comprehensive list of possibilities.
   The service can then use that token to authenticate as a user to other services.
   This flow might be used by a load-testing or monitoring application.
 
+- An :abbr:`IDAC (International Data Access Center)` wants to authenticate a user and determine their data access rights.
+  (See :dmtn:`253`.)
+
 .. _browser-auth:
 
 Browser authentication
@@ -509,14 +512,17 @@ Such services can then point to the authentication service as the authentication
 
 .. _Chronograf: https://www.influxdata.com/time-series-platform/chronograf/
 
+:abbr:`IDACs (International Data Access Centers)` may also wish to rely on the :abbr:`USDAC (United States Data Access Center)` for user authentication and data rights verification.
+In this mode, they would act as OpenID Connect clients of the USDAC.
+
 At present, OpenID Connect authentication used in this fashion does not do any access control.
 All users with any access to that Science Platform deployment will be able to complete the OpenID Connect authentication.
 The protected service must do any necessary access control itself.
 
 The ID token returned by this OpenID Connect provider is a :abbr:`JWT (JSON Web Token)` (see :rfc:`7519`) that includes the user's username, full name (if available), and numeric UID (if available).
-No other information is provided to the protected service.
+No other information is currently provided to the protected service, although additional information may be added for IDACs in the future (see :dmtn:`253`).
 
-Note that this ID token is not a token as defined by :ref:`tokens` and cannot be used to authenticate to any other Science Platform service.
+This ID token is not a token as defined by :ref:`tokens` and cannot be used to authenticate to any other Science Platform service.
 It is an implementation detail of the OpenID Connect authentication process.
 
 .. _groups:
