@@ -1,4 +1,4 @@
-"""Source for general-access.png component diagram."""
+"""Source for the component diagram for local OpenID Connect authentication."""
 
 import os
 
@@ -9,8 +9,6 @@ from diagrams.generic.storage import Storage
 from diagrams.onprem.client import User
 from diagrams.onprem.compute import Server
 from diagrams.onprem.identity import Dex
-
-os.chdir(os.path.dirname(__file__))
 
 graph_attr = {
     "label": "",
@@ -28,7 +26,7 @@ node_attr = {
 with Diagram(
     "Restricted access deployment",
     show=False,
-    filename="local",
+    filename="arch-local",
     outformat="png",
     graph_attr=graph_attr,
     node_attr=node_attr,
