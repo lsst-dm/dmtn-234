@@ -1,0 +1,22 @@
+graph LR
+    session
+    internal_a[internal]
+    internal_b[internal]
+    internal_c[internal]
+    internal_d[internal]
+    internal_e[internal]
+    internal_f[internal]
+    notebook_a[notebook]
+    notebook_b[notebook]
+    user_a[user]
+    user_b[user]
+    service
+
+    session --> notebook_a --> internal_a --> internal_f
+    session --> internal_b
+    session --> user_a
+
+    user_b --> internal_c
+
+    service --> internal_d
+    service --> notebook_b --> internal_e

@@ -1,10 +1,11 @@
-:tocdepth: 1
+##############################
+RSP identity management design
+##############################
 
-Abstract
-========
+.. abstract::
 
-The identity management, authentication, and authorization component of the Rubin Science Platform is responsible for maintaining a list of authorized users and their associated identity information, authenticating their access to the Science Platform, and determining which services they are permitted to use.
-This tech note describes the high-level design of that system and summarizes its desired features and capabilities, independent of choice of implementation.
+   The identity management, authentication, and authorization component of the Rubin Science Platform is responsible for maintaining a list of authorized users and their associated identity information, authenticating their access to the Science Platform, and determining which services they are permitted to use.
+   This tech note describes the high-level design of that system and summarizes its desired features and capabilities, independent of choice of implementation.
 
 :ldm:`554` defines the general requirements for the Science Platform.
 This design generally addresses requirements DMS-LSP-REQ-0007 (Abide by the Data Access Policies), DMS-LSP-REQ-0020 (Authenticated User Access), and DMS-LSP-REQ-0027 (Privacy of User Activities) of that document.
@@ -85,11 +86,10 @@ A federated identity deployment of the Science Platform has, at a high level, th
 Both services receive user requests, and service A also sends requests to service B.
 (The deployment would have multiple services, not just two services as shown.)
 
-.. figure:: /_static/federated.png
-   :name: Federated identity deployment architecture
+.. diagrams:: arch-federated.py
 
-   High-level structure of authentication and identity management for two services that receive user requests.
-   Service A also sends requests to service B.
+This is a high-level structure of authentication and identity management, using federated identity, for two services that receive user requests.
+Service A also sends requests to service B.
 
 The identity management component is where the user's identity data (email, full name, group membership, etc.) and associated identities are stored, and where the user can go to change that information.
 Here it is shown as running outside of the Kubernetes cluster on which the Science Platform is deployed.
@@ -102,12 +102,10 @@ The diagram for GitHub is similar, except that GitHub serves as both the identit
 Local identity management deployments have more variation, since they may or may not use LDAP.
 Here is a sample diagram for deployment that uses local identity management with an OpenID Connect identity provider and LDAP as the data store for identity information.
 
-.. figure:: /_static/local.png
-   :name: Sample local identity provider deployment architecture
+.. diagrams:: arch-local.py
 
-   Sample high-level structure of authentication and identity management in a deployment using a local OpenID Connect provider and LDAP.
-   Both services receive user requests.
-   Service A also sends requests to service B.
+Both services receive user requests.
+Service A also sends requests to service B.
 
 Security model
 ==============
@@ -270,20 +268,19 @@ service
 
 These tokens tend to organize into hierarchies, as shown in the following diagram.
 
-.. figure:: /_static/tokens.svg
-   :name: Token type hierarchy
+.. mermaid:: tokens.mmd
+   :caption: Token type hierarchy
 
-   Hierarchy of token types.
-   The token type on the left of each arrow is used as authentication to create the token type on the right of the arrow.
-   Token creation other than creation of a user token from a session token happens automatically and the user need not be aware of it.
+The token type on the left of each arrow is used as authentication to create the token type on the right of the arrow.
+Token creation other than creation of a user token from a session token happens automatically and the user need not be aware of it.
 
-The first hierarchy starts from a user's browser session.
+The first hierarchy shows the user token being used to access services that make subrequests.
+
+The second hierarchy starts from a user's browser session.
 If the user accesses services that require authentication but don't make any subrequests, no further tokens are created.
 Otherwise, notebook and internal tokens may be created to satisfy the user's requests.
 Notice that subrequests can themselves have subrequests, which may create a chain of internal tokens.
 The user can also manually create a user token.
-
-The second hierarchy shows the user token being used to access services that make subrequests.
 
 The third hierarchy is for service-to-service authentication outside the scope of a user request.
 Service-to-service authentication may also involve notebook and internal tokens.

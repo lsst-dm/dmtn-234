@@ -1,4 +1,4 @@
-"""Source for general-access.png component diagram."""
+"""Source for the component diagram for federated authentication."""
 
 import os
 
@@ -7,8 +7,6 @@ from diagrams.gcp.compute import KubernetesEngine
 from diagrams.gcp.network import LoadBalancing
 from diagrams.onprem.client import User
 from diagrams.onprem.compute import Server
-
-os.chdir(os.path.dirname(__file__))
 
 graph_attr = {
     "label": "",
@@ -26,7 +24,7 @@ node_attr = {
 with Diagram(
     "General access deployment",
     show=False,
-    filename="federated",
+    filename="arch-federated",
     outformat="png",
     graph_attr=graph_attr,
     node_attr=node_attr,
