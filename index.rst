@@ -499,6 +499,8 @@ The authentication service will also automatically refresh the service token to 
 
 As specified in :dmtn:`225`, the usernames associated with all such tokens must begin with ``bot-``.
 
+.. _openid-connect:
+
 OpenID Connect authentication
 -----------------------------
 
@@ -512,12 +514,17 @@ Such services can then point to the authentication service as the authentication
 :abbr:`IDACs (International Data Access Centers)` may also wish to rely on the :abbr:`USDAC (United States Data Access Center)` for user authentication and data rights verification.
 In this mode, they would act as OpenID Connect clients of the USDAC.
 
-At present, OpenID Connect authentication used in this fashion does not do any access control.
+All OpenID Connect clients must be pre-registered with Gafaelfawr on the instance of the Science Platform that they wish to use for authentication and use a return URL and client ID and secret that match their registration.
+
+OpenID Connect authentication used in this fashion does not do any access control.
 All users with any access to that Science Platform deployment will be able to complete the OpenID Connect authentication.
 The protected service must do any necessary access control itself.
 
-The ID token returned by this OpenID Connect provider is a :abbr:`JWT (JSON Web Token)` (see :rfc:`7519`) that includes the user's username, full name (if available), and numeric UID (if available).
-No other information is currently provided to the protected service, although additional information may be added for IDACs in the future (see :dmtn:`253`).
+The ID token returned by this OpenID Connect provider is a :abbr:`JWT (JSON Web Token)` (see :rfc:`7519`).
+The standard scopes ``openid`` (required), ``profile``, and ``email`` are supported, as well as the non-standard ``rubin`` OpenID Connect scope.
+If the ``rubin`` scope is requested, the resulting ID token will include a ``data_rights`` claim that contains a space-separated list of data releases to which the user has access.
+This list is determined based on the user's group membership.
+For more details, see :dmtn:`253`.
 
 This ID token is not a token as defined by :ref:`tokens` and cannot be used to authenticate to any other Science Platform service.
 It is an implementation detail of the OpenID Connect authentication process.
@@ -529,6 +536,7 @@ Groups
 
 As discussed in :ref:`scopes`, when a user authenticates to the Science Platform with a web browser, their group membership is retrieved and they are granted scopes based on their group membership.
 The group membership of the user is also provided to each service in an HTTP header, and is available via the :ref:`token-api` on request from any service receiving a delegated token (see :ref:`subrequest-auth`).
+Finally, groups are used to determine the user's data rights as included in OpenID Connect ID tokens (see :ref:`openid-connect`).
 
 The source of the user's group membership information varies by type of Science Platform deployment.
 
@@ -606,6 +614,10 @@ References
 
 :dmtn:`235`
     Lists and defines the scopes used by the Science Platform.
+
+:dmtn:`253`
+    Documents how IDACs can authenticate users via OpenID Connect.
+    This includes more detailed documentation of the features of the Science Platform OpenID Connect authentication service.
 
 :ldm:`554`
     General requirements document for the Science Platform.
