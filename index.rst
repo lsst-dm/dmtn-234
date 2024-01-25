@@ -75,6 +75,9 @@ In order to deploy the Science Platform's identity management component, the hos
   If this storage is not persistent, user tokens will be regularly invalidated.
   The hosting environment should also provide some way for those volumes to be backed up and restored.
 
+While support for ``NetworkPolicy`` enforcement is not strictly required to run the Science Platform, all of the security features documented in this tech note depend on Kubernetes-level enforcement of ``NetworkPolicy`` resources.
+If Kubernetes does not enforce these restrictions, any Science Platform service or user notebook will be able to access any service in the Science Platform as any user.
+
 A PostgreSQL database for internal storage of authentication and authorization data will be used if available and suitable for the needs of the Science Platform, but the Science Platform can deploy its own internal PostgreSQL server if necessary.
 
 Due to the specific requirements around auth subrequest handling, the Science Platform provides its own ingress controller and cannot use an ingress controller provided by the hosting environment.
