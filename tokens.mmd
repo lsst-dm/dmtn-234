@@ -1,4 +1,4 @@
-graph LR
+graph TB
     session
     internal_a[internal]
     internal_b[internal]
@@ -11,12 +11,25 @@ graph LR
     user_a[user]
     user_b[user]
     service
+    oidc
 
-    session --> notebook_a --> internal_a --> internal_f
-    session --> internal_b
-    session --> user_a
+    subgraph Session
+        direction LR
+        session --> notebook_a --> internal_a --> internal_f
+        session --> internal_b
+        session --> oidc
+        session --> user_a
+    end
 
-    user_b --> internal_c
+    subgraph User
+        direction LR
+        user_b --> internal_c
+    end
 
-    service --> internal_d
-    service --> notebook_b --> internal_e
+    subgraph Service
+        direction LR
+        service --> internal_d
+        service --> notebook_b --> internal_e
+    end
+
+    Session ~~~ User ~~~ Service

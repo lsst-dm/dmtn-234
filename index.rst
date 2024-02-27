@@ -127,6 +127,8 @@ The identity management system attempts to provide the following security servic
 
 - Tokens to act on behalf of the user are only issued to protected applications on request, are marked with the application to which they were issued, and can be restricted in scope.
 
+- Applications that are external to the Science Platform, or that need separate control over the authentication process, can use the identity management system as an OpenID Connect authentication provider.
+
 In providing those services, it attempts to maintain the following properties:
 
 - Authentication cookies are tamper-resistent.
@@ -239,7 +241,7 @@ The identity management system of a deployment using federated identity is a spe
 It is only accessible via a web browser and uses identity information from the federated identity provider directly.
 Tokens cannot be used to access the identity management system.
 
-Tokens come in five types.
+Tokens come in six types.
 The uses of those token types are discussed in more detail in :ref:`authentication`.
 
 session
@@ -263,13 +265,17 @@ notebook
     When a user spawns a Notebook Aspect lab, that lab is issued a token with all the same access rights as the user's browser session.
     That token is then available to the user for API calls to other Science Platform services from within their notebook.
 
+oidc
+    An access token issued as a result of an OpenID Connect authentication.
+    This token is used by the OpenID Connect client to retrieve metadata about the authenticated user from the identity management system.
+
 service
     The one type of authentication token not associated with a user.
     These tokens are used when one service wants to make an API call to another Science Platform service that is unrelated to a user request.
     For example, a monitoring service may want to make a test API call to another service to ensure that it is operating properly.
     See :ref:`service-auth` for more details.
 
-These tokens tend to organize into hierarchies, as shown in the following diagram.
+These tokens tend to organize into hierarchies, as shown in the following diagrams.
 
 .. mermaid:: tokens.mmd
    :caption: Token type hierarchy
@@ -277,15 +283,15 @@ These tokens tend to organize into hierarchies, as shown in the following diagra
 The token type on the left of each arrow is used as authentication to create the token type on the right of the arrow.
 Token creation other than creation of a user token from a session token happens automatically and the user need not be aware of it.
 
-The first hierarchy shows the user token being used to access services that make subrequests.
-
-The second hierarchy starts from a user's browser session.
+The session hierarchy starts from a user's browser session.
 If the user accesses services that require authentication but don't make any subrequests, no further tokens are created.
-Otherwise, notebook and internal tokens may be created to satisfy the user's requests.
+Otherwise, notebook, oidc, and internal tokens may be created to satisfy the user's requests.
 Notice that subrequests can themselves have subrequests, which may create a chain of internal tokens.
 The user can also manually create a user token.
 
-The third hierarchy is for service-to-service authentication outside the scope of a user request.
+The user hierarchy shows the user token being used to access services that make subrequests.
+
+The service hierarchy is for service-to-service authentication outside the scope of a user request.
 Service-to-service authentication may also involve notebook and internal tokens.
 
 .. _scopes:
@@ -314,7 +320,7 @@ For a list of the scopes used by the Science Platform, their definitions, and th
 Child tokens
 ------------
 
-Notebook and internal tokens are created from another token and are called "child tokens."
+Notebook, internal, and oidc tokens are created from another token and are called "child tokens."
 The token from which they are created is called a "parent token."
 
 Child tokens inherit their lifetime and scopes from their parent token, in a possibly restricted way.
@@ -531,6 +537,11 @@ For more details, see :dmtn:`253`.
 
 This ID token is not a token as defined by :ref:`tokens` and cannot be used to authenticate to any other Science Platform service.
 It is an implementation detail of the OpenID Connect authentication process.
+
+The access token returned by an OpenID Connect authentication is a regular token as defined by :ref:`tokens`, of type oidc.
+It is a child token of the session token that the user uses to complete the OpenID Connect authentication.
+It has no scopes and can only be used to obtain claims about the user, normally via an OpenID Connect userinfo request.
+These claims mirror the claims include in the ID token, but may contain more information if the OpenID Connect client didn't request all possible OpenID Connect ID token scopes.
 
 .. _groups:
 
