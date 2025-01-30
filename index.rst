@@ -609,6 +609,40 @@ For further details on UID and GID assignment, see :dmtn:`225`.
 
 Identities used for :ref:`service-to-service authentication <service-auth>` internal to a deployment exceptionally may not have UIDs or GIDs if they don't need to authenticate to services that require them.
 
+Quotas
+======
+
+*Partly addresses requirements DMS-PRTL-REQ-0117 (Computational Quotas User Interface) and DMS-NB-REQ-0022 (Computational and Storage Quotas.*
+
+The identity management system is responsible for calculating user quotas and providing user quota information to the rest of the Science Platform.
+It also provides a simple implementation of API quotas and rate limiting that any Science Platform service can use, although that implementation has some restrictions and may not be suitable for all API quotas.
+
+Quota calculation
+-----------------
+
+There are three sources of quota information for a given user:
+
+#. Default quotas for all users of a given instance of the Science Platform.
+#. Additional quota granted to members of specific groups, which is added to the quota available to all users.
+#. Temporary quota overrides that are added by Science Platform administrators to handle urgent problems, such as an overloaded infrastructure.
+
+The identity management system is responsible for calculating quota for each user by combining those three sources of quota and making that quota information available to the user, to administrators, and to services that need it.
+
+In addition, the identity management system supports disabling quotas completely for members of certain groups, allowing (for example) Science Platform administrators to access services without regard to quota.
+
+API rate limiting
+-----------------
+
+Because the authorization portion of the identity management system has to intercept requests to ensure that they are allowed, it is also in a position to impose rate limits.
+It therefore supports a simple rate limiting system that can be used by any service that does not have more complex needs.
+
+API quotas for this system are expressed as an allowed number of requests per some interval of time.
+Requests are counted when they are authorized, and the identity management service rejects requests that exceed the API quota, along with an appropriate HTTP status code and headers to tell the user when API requests will be permitted again.
+
+This mechanism has the serious limitation that it does not know the nature of the request and therefore treats all requests as equivalent for quota purposes, even if one request is a cheap informational API call and another request is an expensive data retrieval.
+It is therefore only suitable for rate limiting of services where this limitation is acceptable.
+More complex quota enforcement will need to be done by the service itself, based on quota information retrieved from the identity management system, so that the service can apply appropriate restrictions based on the impact of the request.
+
 .. _token-api:
 
 Token API
