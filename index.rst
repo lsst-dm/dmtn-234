@@ -70,18 +70,19 @@ In order to deploy the Science Platform's identity management component, the hos
 
 - Load balancing and IP allocation for an ingress controller.
   This will be used by ingress-nginx to allocate its external IP and to receive external traffic.
+  Due to the specific requirements around auth subrequest handling, the Science Platform provides its own ingress controller and cannot use an ingress controller provided by the hosting environment.
 
 - A Kubernetes provider of ``PersistentVolume`` storage.
   This will be used to store the token data for the Science Platform.
   If this storage is not persistent, user tokens will be regularly invalidated.
   The hosting environment should also provide some way for those volumes to be backed up and restored.
 
-While support for ``NetworkPolicy`` enforcement is not strictly required to run the Science Platform, all of the security features documented in this tech note depend on Kubernetes-level enforcement of ``NetworkPolicy`` resources.
-If Kubernetes does not enforce these restrictions, any Science Platform service or user notebook will be able to access any service in the Science Platform as any user.
+- A PostgreSQL database for internal storage of authentication and authorization data.
+  The Science Platform can deploy an internal PostgreSQL server if necessary, but this internal server should only be used for development and proof-of-concept deployments, not for production.
 
-A PostgreSQL database for internal storage of authentication and authorization data will be used if available and suitable for the needs of the Science Platform, but the Science Platform can deploy its own internal PostgreSQL server if necessary.
-
-Due to the specific requirements around auth subrequest handling, the Science Platform provides its own ingress controller and cannot use an ingress controller provided by the hosting environment.
+- A Kubernetes networking layer that does ``NetworkPolicy`` enforcement.
+  All of the security features documented in this tech note depend on Kubernetes-level enforcement of ``NetworkPolicy`` resources.
+  If Kubernetes does not enforce these restrictions, any Science Platform service or user notebook will be able to access any service in the Science Platform as any user.
 
 Component overview
 ==================
