@@ -134,6 +134,9 @@ The identity management system attempts to provide the following security servic
 
 - Applications that are external to the Science Platform, or that need separate control over the authentication process, can use the identity management system as an OpenID Connect authentication provider.
 
+- Cross-site CORS preflight requests from outside the Science Platform are not allowed.
+  Any requests that would trigger CORS preflight will only be allowed from web sites hosted inside the same Science Platform (and possibly not then, depending on the CORS policy of individual applications).
+
 In providing those services, it attempts to maintain the following properties:
 
 - Authentication cookies are tamper-resistent.
@@ -609,6 +612,28 @@ For deployments using a local identity management system, that system must provi
 For further details on UID and GID assignment, see :dmtn:`225`.
 
 Identities used for :ref:`service-to-service authentication <service-auth>` internal to a deployment exceptionally may not have UIDs or GIDs if they don't need to authenticate to services that require them.
+
+Origins and domains
+===================
+
+The identity management system can be run in one of two modes: all protected services share the same domain name, or protected services may use subdomains of the parent domain managed by the identity management system.
+The latter configuration preferred for production deployments since it allows components of the Science Platform to be isolated from each other on different JavaScript origins.
+This is the recommended configuration for per-user JupyterLab servers, for example.
+(See :dmtn:`193`.)
+
+If the identity management system is configured to allow subdomains, it will use domain-scoped authentication cookies instead of host-scoped cookies.
+This means the authentication cookie will be sent to any web server hosted at a subdomain of the root domain of the Science Platform.
+In this configuration, security guarantees can only be maintained if every extant subdomain points to the same instance of the Science Platform and is managed by the same deployment of the identity management system.
+
+CORS
+----
+
+The identity management system also intercepts and examines all CORS preflight requests and implements a global minimum CORS policy.
+Preflight requests from an ``Origin`` outside of that instance of the Science Platform are always rejected.
+This ensures that, regardless of the CORS policy implemented by the underlying application, cross-site requests that require CORS preflight checks will not be accepted from outside the Science Platform.
+
+If the request comes from within the Science Platform, such as from a subdomain of the base domain, it will be passed through to the protected service, which can then impose its own CORS policy.
+Therefore, cross-site requests that require CORS preflight will be approved only if they come from within the Science Platform *and* the underlying service accepts the CORS preflight request.
 
 Quotas
 ======
