@@ -578,6 +578,11 @@ Users will be added to appropriate access groups during enrollment by the approv
 Users may also create their own groups, and add and remove members from those groups as they see fit.
 Collaborations using the Science Platform may also maintain groups of their members or affiliates.
 
+For further details about the sources of group information and their naming constraints, see :dmtn:`225`.
+
+User private groups
+-------------------
+
 In addition to those groups, in federated identity deployments every user will also be a member of a group with the same name as their username.
 That group will have only one member, the matching user, and it will be the user's primary GID.
 (This is commonly called a user private group.)
@@ -587,11 +592,15 @@ It also provides the user with a default group for services that use an underlyi
 GitHub deployments also use user private groups with the same GID as the user's UID.
 Local OpenID Connect deployments must provide a primary GID for each user, but that GID may or may not be for a user private group.
 
+Access control based on groups
+------------------------------
+
 Access control decisions based on group membership must be made by individual services.
 The authentication service only applies access restrictions based on scopes, and otherwise passes the group information to the service for it to do with as it sees fit.
 In many cases, services will make subrequests on behalf of the user, and rely on access control by group membership to be imposed by lower-level services.
 
-For further details about the sources of group information and their naming constraints, see :dmtn:`225`.
+For applications that use IVOA-standard protocols for astronomy, the identity management system provides an `IVOA Group Membership Service Version 1.0 <https://www.ivoa.net/documents/GMS/20220222/REC-GMS-1.0.html>`__ implementation.
+Service with a delegated token for a user can query that service for the user's group membership.
 
 UIDs and GIDs
 =============
@@ -684,6 +693,9 @@ This can be used by services making or processing subrequests (see :ref:`subrequ
 
 Administrators with a token having ``admin:token`` scope can take all of those same actions on behalf of the user; can add, remove, or list administrators (whose session tokens receive the ``admin:token`` scope when they authenticate); can create new tokens on behalf of arbitrary users or modify arbitrary user tokens; and can do global queries on all tokens, token history, and any other data stored by the authentication service.
 Administrators cannot get the secret portion of existing tokens without having possession of the token.
+
+Administrators with a token having ``admin:userinfo`` scope can request user information about arbitrary users without having a token for that user.
+These APIs only work for deployments that use LDAP as the source for user information and are not implemented on deployments that use GitHub.
 
 References
 ==========
