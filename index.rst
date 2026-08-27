@@ -571,7 +571,7 @@ Finally, groups are used to determine the user's data rights as included in Open
 The source of the user's group membership information varies by type of Science Platform deployment.
 
 For deployments using GitHub, group membership is taken from the user's GitHub teams.
-For deployments using a local identity provider, group membership comes either from a local LDAP server or from the token issued by an OpenID Connect authentication service.
+For deployments using a local identity provider group membership comes from a local LDAP server.
 
 For deployments using federated identity, group membership is maintained in the identity management system.
 Users will be added to appropriate access groups during enrollment by the approver.
@@ -616,7 +616,7 @@ The primary GID for a user will be equal to the UID and will correspond to the G
 For deployments using GitHub, UIDs and GIDs come from GitHub.
 A user private group with a GID matching that UID will be synthesized and added to the user's group membership.
 
-For deployments using a local identity management system, that system must provide the UIDs and GIDs for the user and their groups, either via LDAP or from an OpenID Connect ID token.
+For deployments using a local identity management system, that system must provide the UIDs and GIDs for the user and their groups via LDAP.
 
 For further details on UID and GID assignment, see :dmtn:`225`.
 
@@ -671,8 +671,9 @@ API rate limiting
 Because the authorization portion of the identity management system has to intercept requests to ensure that they are allowed, it is also in a position to impose rate limits.
 It therefore supports a simple rate limiting system that can be used by any service that does not have more complex needs.
 
-API quotas for this system are expressed as an allowed number of requests per some interval of time.
-Requests are counted when they are authorized, and the identity management service rejects requests that exceed the API quota, along with an appropriate HTTP status code and headers to tell the user when API requests will be permitted again.
+API quotas for this system are expressed as an allowed number of requests per minute.
+Requests are counted when they are authorized, and the identity management service rejects requests that exceed the API quota.
+That rejection uses an appropriate HTTP status code and headers to tell the user when API requests will be permitted again.
 
 This mechanism has the serious limitation that it does not know the nature of the request and therefore treats all requests as equivalent for quota purposes, even if one request is a cheap informational API call and another request is an expensive data retrieval.
 It is therefore only suitable for rate limiting of services where this limitation is acceptable.
@@ -696,6 +697,8 @@ Administrators cannot get the secret portion of existing tokens without having p
 
 Administrators with a token having ``admin:userinfo`` scope can request user information about arbitrary users without having a token for that user.
 These APIs only work for deployments that use LDAP as the source for user information and are not implemented on deployments that use GitHub.
+
+Administrators with a token having ``admin:oidc`` scope can register new OpenID Connect clients as discussed in :ref:`openid-connect`.
 
 References
 ==========
